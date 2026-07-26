@@ -2,3 +2,6 @@
 context
 **.md
 !README.md
+**.env
+bin/
+tmp/

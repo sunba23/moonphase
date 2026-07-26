@@ -1,0 +1,4 @@
+.git
+context/
+.golangci.yml
+*_test.go
