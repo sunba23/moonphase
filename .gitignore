@@ -1,5 +1,6 @@
 .claude
 context
+.mcp.json
 **.md
 !README.md
 **.env
