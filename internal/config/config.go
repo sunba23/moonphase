@@ -1,14 +1,18 @@
 package config
 
-import "os"
+import (
+	"errors"
+	"os"
+)
 
 type Config struct {
 	Port        string
 	DatabaseURL string
 	AppEnv      string
+	SupabaseURL string
 }
 
-func Load() Config {
+func Load() (Config, error) {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -19,9 +23,15 @@ func Load() Config {
 		appEnv = "development"
 	}
 
+	supabaseURL := os.Getenv("SUPABASE_URL")
+	if supabaseURL == "" {
+		return Config{}, errors.New("SUPABASE_URL is required")
+	}
+
 	return Config{
 		Port:        port,
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		AppEnv:      appEnv,
-	}
+		SupabaseURL: supabaseURL,
+	}, nil
 }
