@@ -1,0 +1,58 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    # Defaults worth keeping (golangci-lint v2 "standard" set)
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+    # Correctness
+    - bodyclose       # http.Response.Body must be closed
+    - errorlint       # use errors.Is/As + %w wrapping
+    - nilerr          # don't return nil after non-nil err
+    - rowserrcheck    # sql.Rows.Err() must be checked
+    - sqlclosecheck   # sql.Rows/Stmt must be closed
+    - contextcheck    # propagate context.Context correctly
+    - noctx           # http requests must take a context
+
+    # Style / readability
+    - revive          # general style linter (replaces golint)
+    - misspell
+    - unconvert
+    - unparam
+    - prealloc
+
+    # Security
+    - gosec
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+    revive:
+      rules:
+        - name: exported
+          disabled: true   # not enforcing doc comments on every export yet
+
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+          - errcheck
+          - unparam
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/sunba23/moonphase
