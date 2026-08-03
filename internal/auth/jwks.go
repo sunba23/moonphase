@@ -34,6 +34,7 @@ func NewKeyCache(lc fx.Lifecycle, cfg config.Config) (*jwk.Cache, error) {
 	lc.Append(fx.Hook{
 		OnStart: func(startCtx context.Context) error {
 			if err := cache.Register(startCtx, url); err != nil {
+				cancel()
 				return fmt.Errorf("register jwks endpoint %q: %w", url, err)
 			}
 			return nil
