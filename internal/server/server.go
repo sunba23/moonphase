@@ -48,7 +48,12 @@ func NewRouter(verifier *auth.Verifier, logger *zerolog.Logger) *chi.Mux {
 }
 
 func handleMe(w http.ResponseWriter, r *http.Request) {
-	userID, _ := auth.UserIDFromContext(r.Context())
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "internal error: no user id in context", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]string{"user_id": userID})
 }

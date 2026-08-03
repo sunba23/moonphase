@@ -28,9 +28,14 @@ func Load() (Config, error) {
 		return Config{}, errors.New("SUPABASE_URL is required")
 	}
 
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		return Config{}, errors.New("DATABASE_URL is required")
+	}
+
 	return Config{
 		Port:        port,
-		DatabaseURL: os.Getenv("DATABASE_URL"),
+		DatabaseURL: databaseURL,
 		AppEnv:      appEnv,
 		SupabaseURL: supabaseURL,
 	}, nil
