@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/fx"
 
@@ -14,7 +15,19 @@ import (
 // directly by one-shot CLIs (cmd/migrate, cmd/catalog) that have no
 // start/stop lifecycle to hook into.
 func New(ctx context.Context, cfg config.Config) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	poolCfg, err := pgxpool.ParseConfig(cfg.DatabaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("parse database url: %w", err)
+	}
+
+	// Supabase's connection pooler runs in PgBouncer transaction mode, which is
+	// incompatible with pgx's default server-side prepared-statement caching
+	// (statement names collide across pooled backend connections, forcing
+	// per-query reprepare/retry and killing throughput). Mirrors the same
+	// workaround cmd/migrate applies for its own connection.
+	poolCfg.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
 	if err != nil {
 		return nil, fmt.Errorf("create pgx pool: %w", err)
 	}
