@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
+
 	"github.com/sunba23/moonphase/internal/catalog"
 	"github.com/sunba23/moonphase/internal/config"
 	"github.com/sunba23/moonphase/internal/db"
@@ -21,14 +24,16 @@ func main() {
 
 func run() error {
 	if len(os.Args) < 2 {
-		return errors.New("usage: catalog <ingest> [flags]")
+		return errors.New("usage: catalog <ingest|holds> [flags]")
 	}
 
 	switch os.Args[1] {
 	case "ingest":
 		return runIngest(os.Args[2:])
+	case "holds":
+		return runHolds(os.Args[2:])
 	default:
-		return fmt.Errorf("unknown command %q, expected: ingest", os.Args[1])
+		return fmt.Errorf("unknown command %q, expected: ingest, holds", os.Args[1])
 	}
 }
 
@@ -44,18 +49,13 @@ func runIngest(args []string) error {
 		return errors.New("catalog ingest: --file is required")
 	}
 
-	cfg, err := config.Load()
+	pool, cleanup, err := connectDB()
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		return err
 	}
+	defer cleanup()
 
 	ctx := context.Background()
-
-	pool, err := db.New(ctx, cfg)
-	if err != nil {
-		return fmt.Errorf("connect to database: %w", err)
-	}
-	defer pool.Close()
 
 	ingester := catalog.NewIngester(pool)
 
@@ -70,6 +70,170 @@ func runIngest(args []string) error {
 	}
 
 	return nil
+}
+
+func runHolds(args []string) error {
+	if len(args) < 1 {
+		return errors.New("usage: catalog holds <inventory|load-tags|status> [flags]")
+	}
+
+	switch args[0] {
+	case "inventory":
+		return runHoldsInventory(args[1:])
+	case "load-tags":
+		return runHoldsLoadTags(args[1:])
+	case "status":
+		return runHoldsStatus(args[1:])
+	default:
+		return fmt.Errorf("unknown holds command %q, expected: inventory, load-tags, status", args[0])
+	}
+}
+
+func runHoldsInventory(args []string) error {
+	fs := flag.NewFlagSet("holds inventory", flag.ExitOnError)
+	board := fs.Int("board", 0, "board edition holdsetup code (e.g. 1, 15, 17, 21)")
+	out := fs.String("out", "", "output CSV path (stdout if omitted)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	if *board == 0 {
+		return errors.New("catalog holds inventory: --board is required")
+	}
+
+	pool, cleanup, err := connectDB()
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	store := catalog.NewHoldStore(pool)
+
+	rows, err := store.Inventory(context.Background(), *board)
+	if err != nil {
+		return fmt.Errorf("catalog holds inventory: %w", err)
+	}
+
+	w := os.Stdout
+	if *out != "" {
+		f, err := os.Create(*out)
+		if err != nil {
+			return fmt.Errorf("catalog holds inventory: create %s: %w", *out, err)
+		}
+		defer func() { _ = f.Close() }()
+		w = f
+	}
+
+	if err := catalog.WriteInventoryCSV(w, rows); err != nil {
+		return fmt.Errorf("catalog holds inventory: %w", err)
+	}
+
+	return nil
+}
+
+func runHoldsLoadTags(args []string) error {
+	fs := flag.NewFlagSet("holds load-tags", flag.ExitOnError)
+	file := fs.String("file", "", "path to a hand-filled hold-tags CSV")
+	board := fs.Int("board", 0, "board edition holdsetup code (e.g. 1, 15, 17, 21)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	if *file == "" {
+		return errors.New("catalog holds load-tags: --file is required")
+	}
+	if *board == 0 {
+		return errors.New("catalog holds load-tags: --board is required")
+	}
+
+	f, err := os.Open(*file) //nolint:gosec // path is an operator-supplied CLI flag, not untrusted input
+	if err != nil {
+		return fmt.Errorf("catalog holds load-tags: open %s: %w", *file, err)
+	}
+	defer func() { _ = f.Close() }()
+
+	rows, err := catalog.ReadTagsCSV(f)
+	if err != nil {
+		return fmt.Errorf("catalog holds load-tags: %w", err)
+	}
+
+	for _, r := range rows {
+		if len(r.Modifiers) > catalog.MaxHoldModifiers {
+			fmt.Fprintf(os.Stderr, "warning: %s has %d modifiers (max recommended %d)\n", r.GridRef, len(r.Modifiers), catalog.MaxHoldModifiers)
+		}
+	}
+
+	pool, cleanup, err := connectDB()
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	store := catalog.NewHoldStore(pool)
+
+	if err := store.ApplyTags(context.Background(), *board, rows); err != nil {
+		return fmt.Errorf("catalog holds load-tags: %w", err)
+	}
+
+	tagged := 0
+	for _, r := range rows {
+		if r.PrimaryType != "" {
+			tagged++
+		}
+	}
+	fmt.Printf("applied tags: %d\n", tagged)
+
+	return nil
+}
+
+func runHoldsStatus(args []string) error {
+	fs := flag.NewFlagSet("holds status", flag.ExitOnError)
+	board := fs.Int("board", 0, "board edition holdsetup code (optional filter)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	pool, cleanup, err := connectDB()
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	store := catalog.NewHoldStore(pool)
+
+	var boardFilter *int
+	if *board != 0 {
+		boardFilter = board
+	}
+
+	statuses, err := store.Status(context.Background(), boardFilter)
+	if err != nil {
+		return fmt.Errorf("catalog holds status: %w", err)
+	}
+
+	for _, s := range statuses {
+		fmt.Printf("%-14s (holdsetup %2d): %d / %d tagged\n", catalog.KnownBoards[s.Holdsetup], s.Holdsetup, s.Tagged, s.Total)
+	}
+
+	return nil
+}
+
+// connectDB loads config and opens a pool the way every catalog subcommand
+// needs it. Callers must call cleanup (which closes the pool) when done.
+func connectDB() (*pgxpool.Pool, func(), error) {
+	_ = godotenv.Load() // no-op if .env doesn't exist, e.g. in production where vars are injected directly
+
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, nil, fmt.Errorf("load config: %w", err)
+	}
+
+	pool, err := db.New(context.Background(), cfg)
+	if err != nil {
+		return nil, nil, fmt.Errorf("connect to database: %w", err)
+	}
+
+	return pool, func() { pool.Close() }, nil
 }
 
 func printSummary(s catalog.Summary) {
