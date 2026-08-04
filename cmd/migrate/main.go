@@ -10,6 +10,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/joho/godotenv"
 
 	"github.com/sunba23/moonphase/internal/config"
 	"github.com/sunba23/moonphase/migrations"
@@ -27,6 +28,8 @@ func run() error {
 		return errors.New("usage: migrate <up|down>")
 	}
 	direction := os.Args[1]
+
+	_ = godotenv.Load() // no-op if .env doesn't exist, e.g. in production where vars are injected directly
 
 	cfg, err := config.Load()
 	if err != nil {
