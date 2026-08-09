@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"golang.org/x/term"
 )
@@ -216,6 +218,21 @@ func RunInteractiveTag(ctx context.Context, store *HoldStore, holdsetup int, out
 		return fmt.Errorf("catalog: enter raw terminal mode: %w", err)
 	}
 	defer func() { _ = term.Restore(fd, oldState) }()
+
+	// A raw terminal has ISIG disabled, so Ctrl+C arrives as a plain byte
+	// (see readByte) rather than SIGINT -- but an external SIGTERM/SIGHUP
+	// (e.g. `kill`, or the terminal window closing) still kills the
+	// process directly. Without this handler that leaves the operator's
+	// shell stuck in raw mode until they run `stty sane`.
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGHUP)
+	defer signal.Stop(sigCh)
+	go func() {
+		if _, ok := <-sigCh; ok {
+			_ = term.Restore(fd, oldState)
+			os.Exit(1)
+		}
+	}()
 
 	save := func(current []HoldRow) error {
 		f, err := os.Create(outPath) //nolint:gosec // outPath is operator-supplied (CLI flag or derived from a validated board year), not untrusted input

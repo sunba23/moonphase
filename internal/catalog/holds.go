@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -58,11 +59,14 @@ func (s *HoldStore) Inventory(ctx context.Context, holdsetup int) ([]HoldRow, er
 	return out, nil
 }
 
-// ApplyTags validates every non-blank-PrimaryType row up front, collecting
-// all errors and applying nothing if any row is invalid. Rows with a blank
-// PrimaryType are left untouched -- a partially-filled load is the expected
-// mid-pass case, not an error.
-func (s *HoldStore) ApplyTags(ctx context.Context, holdsetup int, rows []HoldRow) error {
+// validateHoldRows checks every non-blank-PrimaryType row's PrimaryType
+// against ValidateHoldType, collecting all errors rather than stopping at
+// the first one -- so ApplyTags can report every bad row in a single pass
+// instead of forcing the operator through one-error-at-a-time re-runs. Rows
+// with a blank PrimaryType are left untouched -- a partially-filled load is
+// the expected mid-pass case, not an error. Pure and DB-independent so it's
+// directly unit-testable.
+func validateHoldRows(rows []HoldRow) error {
 	var errs []error
 	for _, r := range rows {
 		if r.PrimaryType == "" {
@@ -75,6 +79,15 @@ func (s *HoldStore) ApplyTags(ctx context.Context, holdsetup int, rows []HoldRow
 	if len(errs) > 0 {
 		return fmt.Errorf("catalog: invalid hold tags, applied nothing: %w", errors.Join(errs...))
 	}
+	return nil
+}
+
+// ApplyTags validates every row via validateHoldRows up front and applies
+// nothing if any row is invalid, before ever opening a transaction.
+func (s *HoldStore) ApplyTags(ctx context.Context, holdsetup int, rows []HoldRow) error {
+	if err := validateHoldRows(rows); err != nil {
+		return err
+	}
 
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
@@ -82,6 +95,7 @@ func (s *HoldStore) ApplyTags(ctx context.Context, holdsetup int, rows []HoldRow
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
+	var unmatched []string
 	for _, r := range rows {
 		if r.PrimaryType == "" {
 			continue
@@ -95,7 +109,7 @@ func (s *HoldStore) ApplyTags(ctx context.Context, holdsetup int, rows []HoldRow
 			modifiers = []string{}
 		}
 
-		_, err := tx.Exec(ctx, `
+		tag, err := tx.Exec(ctx, `
 			UPDATE holds
 			SET primary_type = $1, modifiers = $2, is_tagged = true, tagged_at = now()
 			WHERE holdsetup = $3 AND grid_ref = $4
@@ -103,6 +117,13 @@ func (s *HoldStore) ApplyTags(ctx context.Context, holdsetup int, rows []HoldRow
 		if err != nil {
 			return fmt.Errorf("catalog: update hold %s: %w", r.GridRef, err)
 		}
+		if tag.RowsAffected() == 0 {
+			unmatched = append(unmatched, r.GridRef)
+		}
+	}
+
+	if len(unmatched) > 0 {
+		return fmt.Errorf("catalog: no matching hold for grid_ref(s) %s on holdsetup %d (typo, or board not yet ingested); applied nothing", strings.Join(unmatched, ", "), holdsetup)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
