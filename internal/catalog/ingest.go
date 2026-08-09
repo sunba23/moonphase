@@ -289,7 +289,7 @@ const insertMoveSQL = `
 // batchUpsertProblems queues one upsert-problem statement per problem in the
 // batch and sends them all in a single pipelined round trip, returning their
 // ids in the same order as batch.
-func batchUpsertProblems(ctx context.Context, tx pgx.Tx, batch []preparedProblem) ([]int64, error) {
+func batchUpsertProblems(ctx context.Context, tx pgx.Tx, batch []preparedProblem) (ids []int64, err error) {
 	b := &pgx.Batch{}
 	for _, pp := range batch {
 		p := pp.problem
@@ -300,9 +300,13 @@ func batchUpsertProblems(ctx context.Context, tx pgx.Tx, batch []preparedProblem
 	}
 
 	br := tx.SendBatch(ctx, b)
-	defer func() { _ = br.Close() }()
+	defer func() {
+		if cerr := br.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("close upsert-problems batch: %w", cerr)
+		}
+	}()
 
-	ids := make([]int64, len(batch))
+	ids = make([]int64, len(batch))
 	for idx := range batch {
 		var id int64
 		if err := br.QueryRow().Scan(&id); err != nil {
@@ -375,7 +379,11 @@ func batchWriteChildren(ctx context.Context, tx pgx.Tx, batch []preparedProblem,
 	}
 
 	br := tx.SendBatch(ctx, b)
-	defer func() { _ = br.Close() }()
+	defer func() {
+		if cerr := br.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("close write-children batch: %w", cerr)
+		}
+	}()
 
 	for j := 0; j < configStmts; j++ {
 		if _, err := br.Exec(); err != nil {
