@@ -1,0 +1,14 @@
+package layout
+
+templ Page(title string, content templ.Component) {
+	<!DOCTYPE html>
+	<html>
+		<head>
+			<title>{ title } · MoonPhase</title>
+			<script src="/static/htmx.min.js"></script>
+		</head>
+		<body>
+			@content
+		</body>
+	</html>
+}
