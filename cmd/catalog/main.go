@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -84,21 +85,28 @@ func runHolds(args []string) error {
 		return runHoldsLoadTags(args[1:])
 	case "status":
 		return runHoldsStatus(args[1:])
+	case "tag":
+		return runHoldsTag(args[1:])
 	default:
-		return fmt.Errorf("unknown holds command %q, expected: inventory, load-tags, status", args[0])
+		return fmt.Errorf("unknown holds command %q, expected: inventory, load-tags, status, tag", args[0])
 	}
 }
 
 func runHoldsInventory(args []string) error {
 	fs := flag.NewFlagSet("holds inventory", flag.ExitOnError)
-	board := fs.Int("board", 0, "board edition holdsetup code (e.g. 1, 15, 17, 21)")
+	board := fs.String("board", "", "board year (2016, 2017, 2019, or 2024)")
 	out := fs.String("out", "", "output CSV path (stdout if omitted)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 
-	if *board == 0 {
+	if *board == "" {
 		return errors.New("catalog holds inventory: --board is required")
+	}
+
+	holdsetup, err := catalog.ResolveBoardYear(*board)
+	if err != nil {
+		return fmt.Errorf("catalog holds inventory: %w", err)
 	}
 
 	pool, cleanup, err := connectDB()
@@ -109,7 +117,7 @@ func runHoldsInventory(args []string) error {
 
 	store := catalog.NewHoldStore(pool)
 
-	rows, err := store.Inventory(context.Background(), *board)
+	rows, err := store.Inventory(context.Background(), holdsetup)
 	if err != nil {
 		return fmt.Errorf("catalog holds inventory: %w", err)
 	}
@@ -134,7 +142,7 @@ func runHoldsInventory(args []string) error {
 func runHoldsLoadTags(args []string) error {
 	fs := flag.NewFlagSet("holds load-tags", flag.ExitOnError)
 	file := fs.String("file", "", "path to a hand-filled hold-tags CSV")
-	board := fs.Int("board", 0, "board edition holdsetup code (e.g. 1, 15, 17, 21)")
+	board := fs.String("board", "", "board year (2016, 2017, 2019, or 2024)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -142,8 +150,13 @@ func runHoldsLoadTags(args []string) error {
 	if *file == "" {
 		return errors.New("catalog holds load-tags: --file is required")
 	}
-	if *board == 0 {
+	if *board == "" {
 		return errors.New("catalog holds load-tags: --board is required")
+	}
+
+	holdsetup, err := catalog.ResolveBoardYear(*board)
+	if err != nil {
+		return fmt.Errorf("catalog holds load-tags: %w", err)
 	}
 
 	f, err := os.Open(*file) //nolint:gosec // path is an operator-supplied CLI flag, not untrusted input
@@ -171,7 +184,7 @@ func runHoldsLoadTags(args []string) error {
 
 	store := catalog.NewHoldStore(pool)
 
-	if err := store.ApplyTags(context.Background(), *board, rows); err != nil {
+	if err := store.ApplyTags(context.Background(), holdsetup, rows); err != nil {
 		return fmt.Errorf("catalog holds load-tags: %w", err)
 	}
 
@@ -188,9 +201,18 @@ func runHoldsLoadTags(args []string) error {
 
 func runHoldsStatus(args []string) error {
 	fs := flag.NewFlagSet("holds status", flag.ExitOnError)
-	board := fs.Int("board", 0, "board edition holdsetup code (optional filter)")
+	board := fs.String("board", "", "board year (optional filter; 2016, 2017, 2019, or 2024)")
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+
+	var boardFilter *int
+	if *board != "" {
+		holdsetup, err := catalog.ResolveBoardYear(*board)
+		if err != nil {
+			return fmt.Errorf("catalog holds status: %w", err)
+		}
+		boardFilter = &holdsetup
 	}
 
 	pool, cleanup, err := connectDB()
@@ -201,18 +223,50 @@ func runHoldsStatus(args []string) error {
 
 	store := catalog.NewHoldStore(pool)
 
-	var boardFilter *int
-	if *board != 0 {
-		boardFilter = board
-	}
-
 	statuses, err := store.Status(context.Background(), boardFilter)
 	if err != nil {
 		return fmt.Errorf("catalog holds status: %w", err)
 	}
 
 	for _, s := range statuses {
-		fmt.Printf("%-14s (holdsetup %2d): %d / %d tagged\n", catalog.KnownBoards[s.Holdsetup], s.Holdsetup, s.Tagged, s.Total)
+		fmt.Printf("%-4s %-14s: %d / %d tagged\n", catalog.BoardYears[s.Holdsetup], catalog.KnownBoards[s.Holdsetup], s.Tagged, s.Total)
+	}
+
+	return nil
+}
+
+func runHoldsTag(args []string) error {
+	fs := flag.NewFlagSet("holds tag", flag.ExitOnError)
+	board := fs.String("board", "", "board year (2016, 2017, 2019, or 2024)")
+	out := fs.String("out", "", "output CSV path (default migrations/seed/holds/<year>.csv)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	if *board == "" {
+		return errors.New("catalog holds tag: --board is required")
+	}
+
+	holdsetup, err := catalog.ResolveBoardYear(*board)
+	if err != nil {
+		return fmt.Errorf("catalog holds tag: %w", err)
+	}
+
+	outPath := *out
+	if outPath == "" {
+		outPath = filepath.Join("migrations", "seed", "holds", *board+".csv")
+	}
+
+	pool, cleanup, err := connectDB()
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	store := catalog.NewHoldStore(pool)
+
+	if err := catalog.RunInteractiveTag(context.Background(), store, holdsetup, outPath); err != nil {
+		return fmt.Errorf("catalog holds tag: %w", err)
 	}
 
 	return nil

@@ -87,11 +87,19 @@ func (s *HoldStore) ApplyTags(ctx context.Context, holdsetup int, rows []HoldRow
 			continue
 		}
 
+		modifiers := r.Modifiers
+		if modifiers == nil {
+			// pgx encodes a nil []string as SQL NULL, not '{}', which
+			// violates modifiers' NOT NULL constraint for holds with no
+			// modifiers tagged.
+			modifiers = []string{}
+		}
+
 		_, err := tx.Exec(ctx, `
 			UPDATE holds
 			SET primary_type = $1, modifiers = $2, is_tagged = true, tagged_at = now()
 			WHERE holdsetup = $3 AND grid_ref = $4
-		`, r.PrimaryType, r.Modifiers, holdsetup, r.GridRef)
+		`, r.PrimaryType, modifiers, holdsetup, r.GridRef)
 		if err != nil {
 			return fmt.Errorf("catalog: update hold %s: %w", r.GridRef, err)
 		}

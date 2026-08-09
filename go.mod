@@ -11,6 +11,7 @@ require (
 	github.com/lestrrat-go/jwx/v3 v3.1.1
 	github.com/rs/zerolog v1.35.1
 	go.uber.org/fx v1.24.0
+	golang.org/x/term v0.45.0
 )
 
 require (
@@ -34,6 +35,6 @@ require (
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
 )

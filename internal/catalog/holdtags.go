@@ -12,6 +12,27 @@ import (
 // against.
 var AllowedHoldTypes = []string{"crimp", "sloper", "pinch", "jug", "pocket"}
 
+// HoldTypeAbbreviations maps short, unambiguous 2-letter codes to their
+// canonical AllowedHoldTypes entry, so hand-editing a CSV in a spreadsheet
+// doesn't require typing the full word ~734 times across all 4 boards.
+var HoldTypeAbbreviations = map[string]string{
+	"cr": "crimp",
+	"sl": "sloper",
+	"pi": "pinch",
+	"ju": "jug",
+	"po": "pocket",
+}
+
+// ExpandHoldTypeAbbreviation returns the canonical hold type if s is a known
+// abbreviation (case-insensitive), otherwise returns s unchanged so
+// ValidateHoldType's existing rejection still fires on genuinely bad input.
+func ExpandHoldTypeAbbreviation(s string) string {
+	if full, ok := HoldTypeAbbreviations[strings.ToLower(strings.TrimSpace(s))]; ok {
+		return full
+	}
+	return s
+}
+
 // MaxHoldModifiers is the soft cap on modifiers per hold. Exceeding it is not
 // rejected by ReadTagsCSV -- real tagging work shouldn't be blocked mid-pass
 // on an unexpected edge -- callers may warn instead.
@@ -35,12 +56,19 @@ type HoldRow struct {
 	Modifiers   []string
 }
 
+// SortHoldRows sorts rows in place by grid ref (column then row, not
+// lexicographically), the canonical ordering used by both the inventory CSV
+// and the interactive tagger's walk order.
+func SortHoldRows(rows []HoldRow) {
+	sort.Slice(rows, func(i, j int) bool { return Less(rows[i].GridRef, rows[j].GridRef) })
+}
+
 // WriteInventoryCSV writes rows sorted by grid ref (column then row, not
 // lexicographically) with the fixed header grid_ref,primary_type,modifiers.
 func WriteInventoryCSV(w io.Writer, rows []HoldRow) error {
 	sorted := make([]HoldRow, len(rows))
 	copy(sorted, rows)
-	sort.Slice(sorted, func(i, j int) bool { return Less(sorted[i].GridRef, sorted[j].GridRef) })
+	SortHoldRows(sorted)
 
 	cw := csv.NewWriter(w)
 
@@ -91,7 +119,7 @@ func ReadTagsCSV(r io.Reader) ([]HoldRow, error) {
 			return nil, fmt.Errorf("catalog: malformed tags row %v", rec)
 		}
 
-		row := HoldRow{GridRef: rec[0], PrimaryType: strings.TrimSpace(rec[1])}
+		row := HoldRow{GridRef: rec[0], PrimaryType: ExpandHoldTypeAbbreviation(strings.TrimSpace(rec[1]))}
 		if len(rec) >= 3 && rec[2] != "" {
 			for _, m := range strings.Split(rec[2], ";") {
 				m = strings.TrimSpace(m)
