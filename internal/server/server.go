@@ -33,6 +33,8 @@ func NewRouter(verifier *auth.Verifier, logger *zerolog.Logger) *chi.Mux {
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 
+	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Middleware(verifier))
 
