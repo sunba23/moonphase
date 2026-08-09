@@ -88,3 +88,44 @@ func TestReadTagsCSVMalformedHeader(t *testing.T) {
 		t.Fatal("ReadTagsCSV with bad header = nil error, want error")
 	}
 }
+
+func TestExpandHoldTypeAbbreviation(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"cr", "crimp"},
+		{"sl", "sloper"},
+		{"pi", "pinch"},
+		{"ju", "jug"},
+		{"po", "pocket"},
+		{"CR", "crimp"},
+		{"Pi", "pinch"},
+		{"crimp", "crimp"},
+		{"xx", "xx"},
+		{"", ""},
+	}
+
+	for _, tt := range tests {
+		if got := ExpandHoldTypeAbbreviation(tt.in); got != tt.want {
+			t.Errorf("ExpandHoldTypeAbbreviation(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestReadTagsCSVExpandsAbbreviations(t *testing.T) {
+	got, err := ReadTagsCSV(strings.NewReader("grid_ref,primary_type,modifiers\nA1,cr,\nA2,PO,\n"))
+	if err != nil {
+		t.Fatalf("ReadTagsCSV: %v", err)
+	}
+
+	want := map[string]string{"A1": "crimp", "A2": "pocket"}
+	for _, row := range got {
+		if row.PrimaryType != want[row.GridRef] {
+			t.Errorf("row %s primary_type = %q, want %q", row.GridRef, row.PrimaryType, want[row.GridRef])
+		}
+		if err := ValidateHoldType(row.PrimaryType); err != nil {
+			t.Errorf("expanded type %q for %s failed ValidateHoldType: %v", row.PrimaryType, row.GridRef, err)
+		}
+	}
+}
