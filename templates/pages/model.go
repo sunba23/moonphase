@@ -7,6 +7,13 @@ type AuthFormModel struct {
 	Error string
 }
 
+// HubModel is the climber's training context shown on the hub.
+type HubModel struct {
+	BoardName string
+	Angle     int16
+	MaxGrade  string
+}
+
 // OnboardingModel carries the catalog-derived dropdown options and
 // per-request state for the onboarding form.
 type OnboardingModel struct {
