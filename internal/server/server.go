@@ -41,6 +41,7 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 
 	ap := newAuthPages(authClient, secure, logger)
 	op := newOnboardingPages(pool, profileStore, logger)
+	pp := newProfilePages(pool, profileStore, logger)
 
 	r.Get("/signup", ap.handleSignupPage)
 	r.Post("/signup", ap.handleSignupSubmit)
@@ -66,6 +67,9 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 			})
 
 			r.Get("/api/me", handleMe)
+
+			r.Get("/profile", pp.handlePage)
+			r.Post("/profile", pp.handleSubmit)
 		})
 	})
 
