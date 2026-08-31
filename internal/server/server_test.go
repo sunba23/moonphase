@@ -146,6 +146,12 @@ func newTestRouter(verifier *auth.Verifier, authClient *auth.AuthClient, pc Prof
 			r.Get("/profile", func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			})
+			r.Post("/session", func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			r.Get("/session/{sessionID}", func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
 		})
 	})
 
@@ -168,7 +174,7 @@ func TestRouter_ProtectedRoutesRedirectWithoutSession(t *testing.T) {
 	id := startTestJWKS(t)
 	router := newTestRouter(id.newVerifier(t), auth.NewAuthClient(id.cfg), &fakeProfileChecker{err: profile.ErrNotFound})
 
-	for _, path := range []string{"/", "/api/me", "/profile"} {
+	for _, path := range []string{"/", "/api/me", "/profile", "/session/x"} {
 		rec := httptest.NewRecorder()
 		router.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, nil))
 
@@ -186,7 +192,7 @@ func TestRouter_SessionWithoutProfileRedirectsToOnboarding(t *testing.T) {
 	router := newTestRouter(id.newVerifier(t), auth.NewAuthClient(id.cfg), &fakeProfileChecker{err: profile.ErrNotFound})
 	token := id.signToken(t, "user-1")
 
-	for _, path := range []string{"/", "/api/me", "/profile"} {
+	for _, path := range []string{"/", "/api/me", "/profile", "/session/x"} {
 		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, nil)
 		req.AddCookie(&http.Cookie{Name: "mp_session", Value: token})
 		rec := httptest.NewRecorder()
@@ -221,7 +227,7 @@ func TestRouter_SessionWithProfileReachesProtectedRoutes(t *testing.T) {
 	router := newTestRouter(id.newVerifier(t), auth.NewAuthClient(id.cfg), &fakeProfileChecker{profile: &profile.Profile{UserID: "user-1"}})
 	token := id.signToken(t, "user-1")
 
-	for _, path := range []string{"/", "/api/me", "/profile"} {
+	for _, path := range []string{"/", "/api/me", "/profile", "/session/x"} {
 		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, nil)
 		req.AddCookie(&http.Cookie{Name: "mp_session", Value: token})
 		rec := httptest.NewRecorder()

@@ -7,6 +7,25 @@ type AuthFormModel struct {
 	Error string
 }
 
+// HubModel is the climber's training context shown on the hub.
+type HubModel struct {
+	BoardName string
+	Angle     int16
+	MaxGrade  string
+}
+
+// SessionModel carries the first problem for the live-session view.
+type SessionModel struct {
+	SessionID string
+	Problem   catalog.ProblemView
+}
+
+// UnsupportedBoardModel backs the "switch your board" page shown when a
+// profile points at a board the app can't run a session on.
+type UnsupportedBoardModel struct {
+	BoardName string
+}
+
 // OnboardingModel carries the catalog-derived dropdown options and
 // per-request state for the onboarding form.
 type OnboardingModel struct {
