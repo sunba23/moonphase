@@ -21,6 +21,7 @@ import (
 	"github.com/sunba23/moonphase/internal/auth"
 	"github.com/sunba23/moonphase/internal/config"
 	"github.com/sunba23/moonphase/internal/profile"
+	"github.com/sunba23/moonphase/static"
 )
 
 // testIdentity serves a self-signed key pair's public half over HTTP so a
@@ -127,7 +128,10 @@ func newTestRouter(verifier *auth.Verifier, authClient *auth.AuthClient, pc Prof
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(static.FS))))
+	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Middleware(verifier, authClient, false))
@@ -167,6 +171,44 @@ func TestRouter_PublicRoutesNeedNoSession(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("/healthz: expected 200, got %d", rec.Code)
+	}
+}
+
+func TestRouter_StaticAssetsServedWithCorrectContentType(t *testing.T) {
+	id := startTestJWKS(t)
+	router := newTestRouter(id.newVerifier(t), auth.NewAuthClient(id.cfg), &fakeProfileChecker{err: profile.ErrNotFound})
+
+	cases := []struct {
+		path       string
+		typePrefix string
+	}{
+		{"/static/app.css", "text/css"},
+		{"/static/htmx.min.js", "text/javascript"},
+		{"/static/moonboard/2016.jpg", "image/jpeg"},
+	}
+
+	for _, tc := range cases {
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, tc.path, nil))
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s: expected 200, got %d", tc.path, rec.Code)
+		}
+		if got := rec.Header().Get("Content-Type"); !strings.HasPrefix(got, tc.typePrefix) {
+			t.Fatalf("%s: expected Content-Type prefix %q, got %q", tc.path, tc.typePrefix, got)
+		}
+	}
+}
+
+func TestRouter_FaviconReturnsNoContent(t *testing.T) {
+	id := startTestJWKS(t)
+	router := newTestRouter(id.newVerifier(t), auth.NewAuthClient(id.cfg), &fakeProfileChecker{err: profile.ErrNotFound})
+
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/favicon.ico", nil))
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("/favicon.ico: expected 204, got %d", rec.Code)
 	}
 }
 

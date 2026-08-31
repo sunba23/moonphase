@@ -19,6 +19,7 @@ import (
 	"github.com/sunba23/moonphase/internal/profile"
 	"github.com/sunba23/moonphase/internal/recommender"
 	"github.com/sunba23/moonphase/internal/session"
+	"github.com/sunba23/moonphase/static"
 )
 
 func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStore *profile.Store, sessionStore *session.Store, rec *recommender.Recommender, pool *pgxpool.Pool, cfg config.Config, logger *zerolog.Logger) *chi.Mux {
@@ -33,7 +34,13 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 
-	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(static.FS))))
+
+	// Browsers request /favicon.ico unprompted; answer with No Content so it
+	// does not fall through to a 404.
+	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
 
 	ap := newAuthPages(authClient, secure, logger)
 	op := newOnboardingPages(pool, profileStore, logger)
