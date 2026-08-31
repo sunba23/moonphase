@@ -6,8 +6,6 @@ import (
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
-	pgxv5 "github.com/golang-migrate/migrate/v4/database/pgx/v5"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
@@ -50,19 +48,9 @@ func run() error {
 	db := stdlib.OpenDB(*connConfig)
 	defer func() { _ = db.Close() }()
 
-	dbDriver, err := pgxv5.WithInstance(db, &pgxv5.Config{})
+	m, err := migrations.NewMigrator(db)
 	if err != nil {
-		return fmt.Errorf("create pgx migrate driver: %w", err)
-	}
-
-	src, err := iofs.New(migrations.FS, ".")
-	if err != nil {
-		return fmt.Errorf("create migration source: %w", err)
-	}
-
-	m, err := migrate.NewWithInstance("iofs", src, "pgx5", dbDriver)
-	if err != nil {
-		return fmt.Errorf("create migrator: %w", err)
+		return err
 	}
 
 	switch direction {
