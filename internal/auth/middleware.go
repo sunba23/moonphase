@@ -1,27 +1,38 @@
 package auth
 
 import (
-	"encoding/json"
+	"errors"
 	"net/http"
-	"strings"
+
+	"github.com/lestrrat-go/jwx/v3/jwt"
 )
 
-// Middleware extracts and verifies the Authorization: Bearer <token> header.
-// On success the resolved user id is attached to the request context; on any
-// failure (missing header, malformed header, verification error) it responds
-// 401 with the same JSON shape and a WWW-Authenticate header.
-func Middleware(v *Verifier) func(http.Handler) http.Handler {
+// Middleware extracts the session from cookies. On success the resolved user
+// id is attached to the request context. On an expired access token with a
+// present refresh cookie, it attempts one transparent refresh before giving
+// up. Any unrecoverable failure clears the session cookies and redirects
+// (302) to /signin.
+func Middleware(v *Verifier, ac *AuthClient, secure bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token, ok := bearerToken(r)
+			accessToken, refreshToken, ok := sessionCookies(r)
 			if !ok {
-				unauthorized(w)
+				redirectToSignin(w, r)
 				return
 			}
 
-			userID, err := v.Verify(r.Context(), token)
+			userID, err := v.Verify(r.Context(), accessToken)
 			if err != nil {
-				unauthorized(w)
+				if errors.Is(err, jwt.TokenExpiredError()) && refreshToken != "" {
+					if sess, refreshErr := ac.RefreshSession(r.Context(), refreshToken); refreshErr == nil {
+						SetSessionCookies(w, sess, secure)
+						next.ServeHTTP(w, r.WithContext(WithUserID(r.Context(), sess.UserID)))
+						return
+					}
+				}
+
+				ClearSessionCookies(w, secure)
+				redirectToSignin(w, r)
 				return
 			}
 
@@ -30,25 +41,6 @@ func Middleware(v *Verifier) func(http.Handler) http.Handler {
 	}
 }
 
-func bearerToken(r *http.Request) (string, bool) {
-	const prefix = "Bearer "
-
-	header := r.Header.Get("Authorization")
-	if !strings.HasPrefix(header, prefix) {
-		return "", false
-	}
-
-	token := strings.TrimPrefix(header, prefix)
-	if token == "" {
-		return "", false
-	}
-
-	return token, true
-}
-
-func unauthorized(w http.ResponseWriter) {
-	w.Header().Set("WWW-Authenticate", "Bearer")
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusUnauthorized)
-	_ = json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+func redirectToSignin(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/signin", http.StatusFound)
 }
