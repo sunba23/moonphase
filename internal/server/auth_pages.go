@@ -33,11 +33,14 @@ func (a *authPages) handleSigninPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *authPages) handleSignupSubmit(w http.ResponseWriter, r *http.Request) {
-	a.submit(w, r, a.authClient.SignUp, pages.SignupPage)
+	// Every fresh signup needs onboarding — go straight there.
+	a.submit(w, r, a.authClient.SignUp, pages.SignupPage, "/onboarding")
 }
 
 func (a *authPages) handleSigninSubmit(w http.ResponseWriter, r *http.Request) {
-	a.submit(w, r, a.authClient.SignInWithPassword, pages.SigninPage)
+	// A returning user may already be onboarded; redirect to the hub and let
+	// OnboardingGate bounce them to /onboarding if they're not.
+	a.submit(w, r, a.authClient.SignInWithPassword, pages.SigninPage, "/")
 }
 
 // authCall is the shared shape of AuthClient.SignUp and
@@ -47,7 +50,7 @@ type authCall func(ctx context.Context, email, password string) (*auth.Session, 
 
 const maxAuthFormBytes = 1 << 16 // 64KiB — generous for an email+password form
 
-func (a *authPages) submit(w http.ResponseWriter, r *http.Request, call authCall, page func(pages.AuthFormModel) templ.Component) {
+func (a *authPages) submit(w http.ResponseWriter, r *http.Request, call authCall, page func(pages.AuthFormModel) templ.Component, successRedirect string) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxAuthFormBytes)
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "bad form", http.StatusBadRequest)
@@ -71,7 +74,7 @@ func (a *authPages) submit(w http.ResponseWriter, r *http.Request, call authCall
 	}
 
 	auth.SetSessionCookies(w, sess, a.secure)
-	w.Header().Set("HX-Redirect", "/onboarding")
+	w.Header().Set("HX-Redirect", successRedirect)
 	w.WriteHeader(http.StatusOK)
 }
 
