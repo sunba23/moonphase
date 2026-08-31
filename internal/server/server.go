@@ -15,6 +15,7 @@ import (
 
 	"github.com/sunba23/moonphase/internal/auth"
 	"github.com/sunba23/moonphase/internal/config"
+	"github.com/sunba23/moonphase/internal/profile"
 )
 
 const indexHTML = `<!DOCTYPE html>
@@ -23,7 +24,7 @@ const indexHTML = `<!DOCTYPE html>
 <body><h1>MoonPhase v0</h1></body>
 </html>`
 
-func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, cfg config.Config, logger *zerolog.Logger) *chi.Mux {
+func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStore *profile.Store, cfg config.Config, logger *zerolog.Logger) *chi.Mux {
 	r := chi.NewRouter()
 
 	secure := cfg.AppEnv != "development"
@@ -40,12 +41,19 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, cfg config.
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Middleware(verifier, authClient, secure))
 
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "text/html")
-			_, _ = w.Write([]byte(indexHTML))
-		})
+		// Auth-only tier: needs a resolved user id but must NOT be gated by
+		// onboarding completeness (Phase 6 adds /onboarding here).
 
-		r.Get("/api/me", handleMe)
+		r.Group(func(r chi.Router) {
+			r.Use(OnboardingGate(profileStore))
+
+			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/html")
+				_, _ = w.Write([]byte(indexHTML))
+			})
+
+			r.Get("/api/me", handleMe)
+		})
 	})
 
 	return r
