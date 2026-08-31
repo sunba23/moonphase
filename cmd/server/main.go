@@ -9,6 +9,7 @@ import (
 	"github.com/sunba23/moonphase/internal/db"
 	"github.com/sunba23/moonphase/internal/logging"
 	"github.com/sunba23/moonphase/internal/profile"
+	"github.com/sunba23/moonphase/internal/recommender"
 	"github.com/sunba23/moonphase/internal/server"
 	"github.com/sunba23/moonphase/internal/session"
 )
@@ -23,6 +24,7 @@ func main() {
 		auth.Module,
 		profile.Module,
 		session.Module,
+		recommender.Module,
 		server.Module,
 	).Run()
 }
