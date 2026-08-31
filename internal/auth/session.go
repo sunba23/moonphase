@@ -53,6 +53,14 @@ func ClearSessionCookies(w http.ResponseWriter, secure bool) {
 	})
 }
 
+// AccessTokenCookie returns the access-token cookie value from the request,
+// if present. Exposed for handlers (e.g. sign-out) that need the raw token
+// outside the auth middleware's verify/refresh flow.
+func AccessTokenCookie(r *http.Request) (string, bool) {
+	accessToken, _, ok := sessionCookies(r)
+	return accessToken, ok
+}
+
 // sessionCookies reads the access and refresh tokens off the request. ok is
 // true only when an access-token cookie is present; refreshToken may be
 // empty even when ok is true (no refresh cookie set).

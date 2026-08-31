@@ -1,0 +1,24 @@
+package pages
+
+import "github.com/sunba23/moonphase/templates/layout"
+
+templ signupForm(model AuthFormModel) {
+	<form id="authForm" hx-post="/signup" hx-select="#authForm" hx-swap="outerHTML">
+		if model.Error != "" {
+			<p class="error">{ model.Error }</p>
+		}
+		<label>
+			Email
+			<input type="email" name="email" required/>
+		</label>
+		<label>
+			Password
+			<input type="password" name="password" required/>
+		</label>
+		<button type="submit">Sign up</button>
+	</form>
+}
+
+templ SignupPage(model AuthFormModel) {
+	@layout.Page("Sign up", signupForm(model))
+}

@@ -38,11 +38,20 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
+	ap := newAuthPages(authClient, secure, logger)
+
+	r.Get("/signup", ap.handleSignupPage)
+	r.Post("/signup", ap.handleSignupSubmit)
+	r.Get("/signin", ap.handleSigninPage)
+	r.Post("/signin", ap.handleSigninSubmit)
+
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Middleware(verifier, authClient, secure))
 
 		// Auth-only tier: needs a resolved user id but must NOT be gated by
 		// onboarding completeness (Phase 6 adds /onboarding here).
+
+		r.Post("/signout", ap.handleSignout)
 
 		r.Group(func(r chi.Router) {
 			r.Use(OnboardingGate(profileStore))
