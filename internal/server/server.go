@@ -23,8 +23,10 @@ const indexHTML = `<!DOCTYPE html>
 <body><h1>MoonPhase v0</h1></body>
 </html>`
 
-func NewRouter(verifier *auth.Verifier, logger *zerolog.Logger) *chi.Mux {
+func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, cfg config.Config, logger *zerolog.Logger) *chi.Mux {
 	r := chi.NewRouter()
+
+	secure := cfg.AppEnv != "development"
 
 	r.Use(requestLogger(logger))
 
@@ -36,7 +38,7 @@ func NewRouter(verifier *auth.Verifier, logger *zerolog.Logger) *chi.Mux {
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	r.Group(func(r chi.Router) {
-		r.Use(auth.Middleware(verifier))
+		r.Use(auth.Middleware(verifier, authClient, secure))
 
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/html")
