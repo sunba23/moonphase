@@ -6,3 +6,10 @@ context
 **.env
 bin/
 tmp/
+
+# Playwright / Node E2E toolchain
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
