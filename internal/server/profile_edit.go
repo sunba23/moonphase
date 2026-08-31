@@ -32,11 +32,6 @@ func (p *profilePages) loadModel(ctx context.Context, current profile.Profile) (
 		return pages.ProfileModel{}, err
 	}
 
-	boards, err := catalog.BoardEditions(ctx, p.pool)
-	if err != nil {
-		return pages.ProfileModel{}, err
-	}
-
 	angles, err := catalog.DistinctAngles(ctx, p.pool)
 	if err != nil {
 		return pages.ProfileModel{}, err
@@ -44,7 +39,7 @@ func (p *profilePages) loadModel(ctx context.Context, current profile.Profile) (
 
 	return pages.ProfileModel{
 		Grades: grades,
-		Boards: boards,
+		Boards: catalog.SupportedBoards(),
 		Angles: angles,
 
 		CurrentGrade:     current.MaxGrade,
