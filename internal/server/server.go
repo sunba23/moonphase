@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"go.uber.org/fx"
 
@@ -24,7 +25,7 @@ const indexHTML = `<!DOCTYPE html>
 <body><h1>MoonPhase v0</h1></body>
 </html>`
 
-func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStore *profile.Store, cfg config.Config, logger *zerolog.Logger) *chi.Mux {
+func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStore *profile.Store, pool *pgxpool.Pool, cfg config.Config, logger *zerolog.Logger) *chi.Mux {
 	r := chi.NewRouter()
 
 	secure := cfg.AppEnv != "development"
@@ -39,6 +40,7 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	ap := newAuthPages(authClient, secure, logger)
+	op := newOnboardingPages(pool, profileStore, logger)
 
 	r.Get("/signup", ap.handleSignupPage)
 	r.Post("/signup", ap.handleSignupSubmit)
@@ -49,9 +51,11 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 		r.Use(auth.Middleware(verifier, authClient, secure))
 
 		// Auth-only tier: needs a resolved user id but must NOT be gated by
-		// onboarding completeness (Phase 6 adds /onboarding here).
+		// onboarding completeness.
 
 		r.Post("/signout", ap.handleSignout)
+		r.Get("/onboarding", op.handlePage)
+		r.Post("/onboarding", op.handleSubmit)
 
 		r.Group(func(r chi.Router) {
 			r.Use(OnboardingGate(profileStore))
