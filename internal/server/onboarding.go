@@ -32,17 +32,14 @@ func (o *onboardingPages) loadModel(ctx context.Context) (pages.OnboardingModel,
 		return pages.OnboardingModel{}, err
 	}
 
-	boards, err := catalog.BoardEditions(ctx, o.pool)
-	if err != nil {
-		return pages.OnboardingModel{}, err
-	}
-
 	angles, err := catalog.DistinctAngles(ctx, o.pool)
 	if err != nil {
 		return pages.OnboardingModel{}, err
 	}
 
-	return pages.OnboardingModel{Grades: grades, Boards: boards, Angles: angles}, nil
+	// Only app-ready boards (image shipped + fully hold-tagged) — an
+	// out-of-list holdsetup is rejected by boardValid's existing 422 path.
+	return pages.OnboardingModel{Grades: grades, Boards: catalog.SupportedBoards(), Angles: angles}, nil
 }
 
 func (o *onboardingPages) handlePage(w http.ResponseWriter, r *http.Request) {

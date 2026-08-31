@@ -1,0 +1,80 @@
+:root {
+	--fg: #1a1a1a;
+	--muted: #666;
+	--accent: #2f6f4f;
+	--bg: #fafafa;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	padding: 1.5rem 1rem;
+	font: 16px/1.5 system-ui, -apple-system, sans-serif;
+	color: var(--fg);
+	background: var(--bg);
+}
+
+.hub {
+	max-width: 28rem;
+	margin: 0 auto;
+	text-align: center;
+}
+
+.hub__context {
+	color: var(--muted);
+	font-size: 1.1rem;
+}
+
+.hub__start {
+	display: block;
+	width: 100%;
+	padding: 1rem;
+	margin: 1.5rem 0;
+	font-size: 1.25rem;
+	color: #fff;
+	background: var(--accent);
+	border: none;
+	border-radius: 0.5rem;
+	cursor: pointer;
+}
+
+/* Board-image hold overlay (Phase 5). */
+.board {
+	position: relative;
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.board__img {
+	width: 100%;
+	display: block;
+}
+
+.hold {
+	position: absolute;
+	width: 7%;
+	aspect-ratio: 1;
+	border: 3px solid;
+	border-radius: 50%;
+	transform: translate(-50%, -50%);
+	box-sizing: border-box;
+}
+
+.hold--start {
+	border-color: #2ecc40;
+}
+
+.hold--finish {
+	border-color: #b10dc9;
+}
+
+.hold--hand {
+	border-color: #0074d9;
+}
+
+.hold--foot {
+	border-color: #aaa;
+}
