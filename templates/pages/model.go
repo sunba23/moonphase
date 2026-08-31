@@ -15,3 +15,18 @@ type OnboardingModel struct {
 	Angles []int16
 	Error  string
 }
+
+// ProfileModel carries the catalog-derived dropdown options, the user's
+// current values (for pre-selection), and per-request state for the
+// profile-edit form.
+type ProfileModel struct {
+	Grades []string
+	Boards []catalog.BoardEdition
+	Angles []int16
+
+	CurrentGrade     string
+	CurrentHoldsetup int16
+	CurrentAngle     int16
+
+	Error string
+}
