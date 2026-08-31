@@ -1,0 +1,75 @@
+package pages
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/sunba23/moonphase/internal/catalog"
+	"github.com/sunba23/moonphase/templates/layout"
+)
+
+// holdLabel renders a hold's type tag plus any modifiers, e.g.
+// "crimp (sharp, incut)" or "untagged".
+func holdLabel(h catalog.HoldPlacement) string {
+	label := h.PrimaryType
+	if label == "" {
+		label = "untagged"
+	}
+	if len(h.Modifiers) > 0 {
+		label += " (" + strings.Join(h.Modifiers, ", ") + ")"
+	}
+	return label
+}
+
+templ holdMarker(year string, h catalog.HoldPlacement) {
+	{{ x, y := catalog.HoldXY(year, h.Col, h.Row) }}
+	<span
+		class={ "hold", "hold--" + h.Role }
+		style={ templ.SafeCSS(fmt.Sprintf("left:%.2f%%;top:%.2f%%", x, y)) }
+		title={ h.GridRef }
+	></span>
+}
+
+templ moonBoardOverlay(year string, holds []catalog.HoldPlacement) {
+	<div class="board">
+		<img class="board__img" src={ "/static/moonboard/" + year + ".jpg" } alt={ "MoonBoard " + year }/>
+		for _, h := range holds {
+			@holdMarker(year, h)
+		}
+	</div>
+}
+
+templ problemCard(m SessionModel) {
+	<main class="session">
+		<h1>{ m.Problem.Name }</h1>
+		<p class="session__meta">
+			{ m.Problem.Grade } · { strconv.Itoa(int(m.Problem.Angle)) }° · { m.Problem.BoardYear }
+		</p>
+		@moonBoardOverlay(m.Problem.BoardYear, m.Problem.Holds)
+		<ul class="holds">
+			for _, h := range m.Problem.Holds {
+				<li>{ h.GridRef } — { holdLabel(h) } <span class="holds__role">({ h.Role })</span></li>
+			}
+		</ul>
+	</main>
+}
+
+templ SessionPage(m SessionModel) {
+	@layout.Page("Session", problemCard(m))
+}
+
+templ unsupportedBoardContent(m UnsupportedBoardModel) {
+	<main class="hub">
+		<h1>Switch your board</h1>
+		<p>
+			Your profile is set to { m.BoardName }, which MoonPhase can't run a session on
+			yet. Choose 2016 or 2024 in your profile to start a session.
+		</p>
+		<p><a href="/profile">Go to Profile</a></p>
+	</main>
+}
+
+templ UnsupportedBoardPage(m UnsupportedBoardModel) {
+	@layout.Page("Switch your board", unsupportedBoardContent(m))
+}

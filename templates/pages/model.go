@@ -14,6 +14,18 @@ type HubModel struct {
 	MaxGrade  string
 }
 
+// SessionModel carries the first problem for the live-session view.
+type SessionModel struct {
+	SessionID string
+	Problem   catalog.ProblemView
+}
+
+// UnsupportedBoardModel backs the "switch your board" page shown when a
+// profile points at a board the app can't run a session on.
+type UnsupportedBoardModel struct {
+	BoardName string
+}
+
 // OnboardingModel carries the catalog-derived dropdown options and
 // per-request state for the onboarding form.
 type OnboardingModel struct {

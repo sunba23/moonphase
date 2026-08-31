@@ -17,9 +17,11 @@ import (
 	"github.com/sunba23/moonphase/internal/auth"
 	"github.com/sunba23/moonphase/internal/config"
 	"github.com/sunba23/moonphase/internal/profile"
+	"github.com/sunba23/moonphase/internal/recommender"
+	"github.com/sunba23/moonphase/internal/session"
 )
 
-func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStore *profile.Store, pool *pgxpool.Pool, cfg config.Config, logger *zerolog.Logger) *chi.Mux {
+func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStore *profile.Store, sessionStore *session.Store, rec *recommender.Recommender, pool *pgxpool.Pool, cfg config.Config, logger *zerolog.Logger) *chi.Mux {
 	r := chi.NewRouter()
 
 	secure := cfg.AppEnv != "development"
@@ -37,6 +39,7 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 	op := newOnboardingPages(pool, profileStore, logger)
 	pp := newProfilePages(pool, profileStore, logger)
 	hp := newHubPages(profileStore, logger)
+	sp := newSessionPages(pool, profileStore, sessionStore, rec, logger)
 
 	r.Get("/signup", ap.handleSignupPage)
 	r.Post("/signup", ap.handleSignupSubmit)
@@ -62,6 +65,9 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 
 			r.Get("/profile", pp.handlePage)
 			r.Post("/profile", pp.handleSubmit)
+
+			r.Post("/session", sp.handleStart)
+			r.Get("/session/{sessionID}", sp.handleView)
 		})
 	})
 
