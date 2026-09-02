@@ -107,6 +107,13 @@ async function submitResult(page: Page, completion: string, rpe: number): Promis
   await expect(page.getByRole('radio', { name: 'Sent' })).not.toBeChecked();
 }
 
+type Board = { holdsetup: string; year: string; minGrade: string };
+
+const BOARDS: Board[] = [
+  { holdsetup: '1', year: '2016', minGrade: '6B' },
+  { holdsetup: '21', year: '2024', minGrade: '6B+' },
+];
+
 let createdUserId: string | null = null;
 
 test.afterEach(async () => {
@@ -116,44 +123,39 @@ test.afterEach(async () => {
   }
 });
 
-const BOARDS = [
-  { holdsetup: '1', year: '2016', minGrade: '6B' },
-  { holdsetup: '21', year: '2024', minGrade: '6B+' },
-];
+// Sign up a throwaway account, onboard onto `board` at max grade 8B+ (full
+// headroom), start a Main Session, and land on the first problem card. Sets
+// createdUserId for afterEach teardown. Returns the session URL.
+async function signUpOnboardStart(page: Page, board: Board): Promise<string> {
+  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  await page.goto('/signup');
+  await page.getByLabel('Email').fill(`moonphase-e2e+${stamp}@example.com`);
+  await page.getByLabel('Password').fill(`E2e-${stamp}-Pw`);
+  await page.getByRole('button', { name: 'Sign up' }).click();
+  await page.waitForURL('**/onboarding');
+
+  await page.getByLabel('Max grade').selectOption('8B+');
+  await page.getByLabel('Board').selectOption(board.holdsetup);
+  await page.getByLabel('Angle').selectOption('40');
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  const startSession = page.getByRole('button', { name: 'Main Session' });
+  await expect(startSession).toBeVisible();
+
+  const me = await page.request.get('/api/me');
+  expect(me.ok()).toBeTruthy();
+  createdUserId = (await me.json()).user_id as string;
+  expect(createdUserId).toBeTruthy();
+
+  await startSession.click();
+  await page.waitForURL(/\/session\/[0-9a-f-]{36}$/);
+  return page.url();
+}
 
 for (const board of BOARDS) {
   test(`board ${board.year}: a failed or bailed attempt never yields a strictly harder next problem, and the card swaps in place`, async ({ page }) => {
-    const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const email = `moonphase-e2e+${stamp}@example.com`;
-    const password = `E2e-${stamp}-Pw`;
-
-    // --- Sign up ---
-    await page.goto('/signup');
-    await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Password').fill(password);
-    await page.getByRole('button', { name: 'Sign up' }).click();
-    await page.waitForURL('**/onboarding');
-
-    // --- Onboard: max grade at the ladder top so the loop has full headroom ---
-    await page.getByLabel('Max grade').selectOption('8B+');
-    await page.getByLabel('Board').selectOption(board.holdsetup);
-    await page.getByLabel('Angle').selectOption('40');
-    await page.getByRole('button', { name: 'Continue' }).click();
-
-    const startSession = page.getByRole('button', { name: 'Main Session' });
-    await expect(startSession).toBeVisible();
-
-    // Capture the user id via the authenticated API so afterEach can always
-    // tear the account down.
-    const me = await page.request.get('/api/me');
-    expect(me.ok()).toBeTruthy();
-    createdUserId = (await me.json()).user_id as string;
-    expect(createdUserId).toBeTruthy();
-
-    // --- Start the session ---
-    await startSession.click();
-    await page.waitForURL(/\/session\/[0-9a-f-]{36}$/);
-    const sessionUrl = page.url();
+    const sessionUrl = await signUpOnboardStart(page, board);
 
     // Mark the document so a full reload during the loop is detectable.
     await page.evaluate(() => {
@@ -198,3 +200,63 @@ for (const board of BOARDS) {
     await expect(page.getByRole('button', { name: 'Main Session' })).toBeVisible();
   });
 }
+
+/**
+ * Protects test-plan.md Risk #6 / plan row 5.6: the 3 completion-status radios
+ * are a re-selectable choice, not a trigger. Only the RPE button submits. If a
+ * status radio ever gained an auto-submit, mis-tapping "Failed" at the wall
+ * would lock in a wrong rating with no way back.
+ */
+test('board 2016: re-selecting a completion status moves the choice without submitting', async ({ page }) => {
+  const board = BOARDS[0];
+  const sessionUrl = await signUpOnboardStart(page, board);
+
+  let resultPosts = 0;
+  page.on('request', (r) => {
+    if (r.url().endsWith('/result') && r.method() === 'POST') resultPosts += 1;
+  });
+
+  const g0 = await readCardGrade(page, board.year);
+
+  // Walk through all three statuses. Each selection reveals the RPE grid and
+  // moves the checked radio; none of them submits.
+  await page.getByRole('radio', { name: 'Failed' }).check();
+  await expect(page.getByRole('radio', { name: 'Failed' })).toBeChecked();
+  await expect(page.getByRole('button', { name: '5', exact: true })).toBeVisible();
+
+  await page.getByRole('radio', { name: 'Bailed' }).check();
+  await expect(page.getByRole('radio', { name: 'Bailed' })).toBeChecked();
+  await expect(page.getByRole('radio', { name: 'Failed' })).not.toBeChecked();
+
+  await page.getByRole('radio', { name: 'Sent' }).check();
+  await expect(page.getByRole('radio', { name: 'Sent' })).toBeChecked();
+  await expect(page.getByRole('radio', { name: 'Bailed' })).not.toBeChecked();
+  await expect(page.getByRole('button', { name: '5', exact: true })).toBeVisible();
+
+  // Nothing submitted: same card, same URL, zero /result requests so far.
+  expect(page.url()).toBe(sessionUrl);
+  expect(await readCardGrade(page, board.year)).toBe(g0);
+  expect(resultPosts).toBe(0);
+
+  // The RPE button is what submits — do it once, with the final selection.
+  const [resp] = await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith('/result') && r.request().method() === 'POST'),
+    page.getByRole('button', { name: '3', exact: true }).click(),
+  ]);
+  expect(resp.status()).toBe(200);
+  await waitForCardSettled(page);
+
+  // Exactly one submit total — the three status re-taps fired nothing.
+  expect(resultPosts).toBe(1);
+});
+
+/**
+ * Plan row 5.7 / NFR "operable one-handed on a phone in portrait; primary tap
+ * targets remain reachable with the thumb during an active session". The End
+ * session button must be reachable without scrolling on a phone viewport
+ * (config drives the Pixel 7 device).
+ */
+test('board 2016: the End session button is within the initial phone viewport', async ({ page }) => {
+  await signUpOnboardStart(page, BOARDS[0]);
+  await expect(page.getByRole('button', { name: 'End session' })).toBeInViewport();
+});
