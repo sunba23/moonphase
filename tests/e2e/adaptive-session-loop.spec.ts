@@ -260,3 +260,32 @@ test('board 2016: the End session button is within the initial phone viewport', 
   await signUpOnboardStart(page, BOARDS[0]);
   await expect(page.getByRole('button', { name: 'End session' })).toBeInViewport();
 });
+
+/**
+ * Protects test-plan.md Risk #1 / S-04 plan row 6.3: a run of easy sends must
+ * ramp grade — the loop cannot get stuck one grade above the minimum. This is
+ * the regression `adaptive-loop-ramp-fix` fixes (NextPickCandidates used to
+ * sample only the densest grade in the window). "Not stuck" = the grade seen
+ * over an easy-send run gets past min+1; it need not climb every step (hold-type
+ * balance legitimately holds a grade), and it never exceeds the session max.
+ */
+test('board 2016: a run of easy sends ramps grade past the dense floor', async ({ page }) => {
+  const board = BOARDS[0];
+  await signUpOnboardStart(page, board);
+
+  const min = gradeIndex(board.minGrade);
+  const maxAllowed = gradeIndex('8B+');
+  const seen: number[] = [gradeIndex(await readCardGrade(page, board.year))];
+
+  for (let i = 0; i < 6; i++) {
+    await submitResult(page, 'Sent', 2);
+    seen.push(gradeIndex(await readCardGrade(page, board.year)));
+  }
+
+  const peak = Math.max(...seen);
+  expect(peak).toBeGreaterThan(min + 1); // not stuck at the dense floor+1 grade
+  expect(peak).toBeLessThanOrEqual(maxAllowed); // never above the session max
+  for (let i = 1; i < seen.length; i++) {
+    expect(seen[i]).toBeGreaterThanOrEqual(seen[i - 1]); // monotonic on an all-easy-send run
+  }
+});
