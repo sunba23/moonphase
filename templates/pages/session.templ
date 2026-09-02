@@ -40,8 +40,30 @@ templ moonBoardOverlay(year string, holds []catalog.HoldPlacement) {
 	</div>
 }
 
-templ problemCard(m SessionModel) {
-	<main class="session">
+templ resultForm(sessionID string, seq int) {
+	<form
+		class="result"
+		hx-post={ "/session/" + sessionID + "/result" }
+		hx-target="#session-card"
+		hx-swap="outerHTML"
+	>
+		<input type="hidden" name="seq" value={ strconv.Itoa(seq) }/>
+		<fieldset class="result__status">
+			<legend>How did it go?</legend>
+			<label><input type="radio" name="completion" value="sent" required/> Sent</label>
+			<label><input type="radio" name="completion" value="failed" required/> Failed</label>
+			<label><input type="radio" name="completion" value="bailed" required/> Bailed</label>
+		</fieldset>
+		<div class="result__rpe">
+			for n := 1; n <= 10; n++ {
+				<button type="submit" name="rpe" value={ strconv.Itoa(n) }>{ strconv.Itoa(n) }</button>
+			}
+		</div>
+	</form>
+}
+
+templ SessionCard(m SessionCardModel) {
+	<div id="session-card" class="session">
 		<h1>{ m.Problem.Name }</h1>
 		<p class="session__meta">
 			{ m.Problem.Grade } · { strconv.Itoa(int(m.Problem.Angle)) }° · { m.Problem.BoardYear }
@@ -52,11 +74,15 @@ templ problemCard(m SessionModel) {
 				<li>{ h.GridRef } — { holdLabel(h) } <span class="holds__role">({ h.Role })</span></li>
 			}
 		</ul>
-	</main>
+		@resultForm(m.SessionID, m.Seq)
+		<form class="session__end" hx-post={ "/session/" + m.SessionID + "/end" } hx-swap="none">
+			<button type="submit">End session</button>
+		</form>
+	</div>
 }
 
 templ SessionPage(m SessionModel) {
-	@layout.Page("Session", problemCard(m))
+	@layout.Page("Session", SessionCard(m.Card))
 }
 
 templ unsupportedBoardContent(m UnsupportedBoardModel) {
