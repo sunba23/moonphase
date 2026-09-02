@@ -29,6 +29,36 @@ type SessionProblem struct {
 	ConfigurationID int64
 }
 
+// SessionSummary is one row of the read-only history list (FR-013): an ended
+// session's start-time snapshot plus a count of the problems actually climbed
+// (rated) in it. The trailing recommended-but-unrated row never counts.
+type SessionSummary struct {
+	ID           string
+	Holdsetup    int16
+	Angle        int16
+	StartedAt    time.Time
+	ClimbedCount int
+}
+
+// ClimbedProblem is one rated problem in a past session's detail view
+// (FR-014), joined to its catalog name and grade for display.
+type ClimbedProblem struct {
+	Seq        int
+	Name       string
+	Grade      string
+	RPE        int16
+	Completion string
+	ClimbedAt  time.Time
+}
+
+// ClimbedProblemRef is the minimum the read-only problem card needs before
+// calling catalog.ProblemDetail: the configuration id plus the recorded result.
+type ClimbedProblemRef struct {
+	ConfigurationID int64
+	RPE             int16
+	Completion      string
+}
+
 // Session status values. StatusActive is set at creation; StatusEnded is set
 // by the explicit End-session action (FR-010). The partial unique index frees
 // the active slot as soon as status moves off 'active'.
