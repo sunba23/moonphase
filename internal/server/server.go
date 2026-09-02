@@ -47,6 +47,7 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 	pp := newProfilePages(pool, profileStore, logger)
 	hp := newHubPages(profileStore, logger)
 	sp := newSessionPages(pool, profileStore, sessionStore, rec, logger)
+	hsp := newHistoryPages(pool, sessionStore, logger)
 
 	r.Get("/signup", ap.handleSignupPage)
 	r.Post("/signup", ap.handleSignupSubmit)
@@ -77,6 +78,10 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 			r.Get("/session/{sessionID}", sp.handleView)
 			r.Post("/session/{sessionID}/result", sp.handleResult)
 			r.Post("/session/{sessionID}/end", sp.handleEnd)
+
+			r.Get("/sessions", hsp.handleList)
+			r.Get("/sessions/{sessionID}", hsp.handleDetail)
+			r.Get("/sessions/{sessionID}/problem/{seq}", hsp.handleProblem)
 		})
 	})
 
