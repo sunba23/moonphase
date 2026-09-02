@@ -38,6 +38,63 @@ func seedNextProblem(ctx context.Context, t *testing.T, pool *pgxpool.Pool, ext 
 	return problemID, configID
 }
 
+// seedNextProblemsBulk inserts n problems + configs on (1, 40) at grade, each
+// with a problem_hold_types row carrying dominant, in one statement — for tests
+// that need a realistically lopsided pool larger than the sample LIMIT.
+func seedNextProblemsBulk(ctx context.Context, t *testing.T, pool *pgxpool.Pool, extBase, n int, grade, dominant string) {
+	t.Helper()
+	var dom any
+	if dominant != "" {
+		dom = dominant
+	}
+	if _, err := pool.Exec(ctx, `
+		WITH new_problems AS (
+			INSERT INTO problems (external_id, holdsetup, name, moves_raw)
+			SELECT g, 1, 'bulk', '' FROM generate_series($1::int, $1::int + $2::int - 1) g
+			RETURNING id, external_id
+		),
+		new_configs AS (
+			INSERT INTO problem_configurations (problem_id, holdsetup, api_id, angle, grade, is_benchmark, repeats)
+			SELECT id, 1, external_id, 40, $3, true, 20 FROM new_problems
+			RETURNING problem_id
+		)
+		INSERT INTO problem_hold_types (problem_id, total_scored, dominant)
+		SELECT problem_id, 4, $4 FROM new_configs
+	`, extBase, n, grade, dom); err != nil {
+		t.Fatalf("seed bulk: %v", err)
+	}
+}
+
+// TestNextPickCandidatesLopsidedWindow pins the ramp fix: a window whose lower
+// grade has ~30x the population of the higher grade must still surface the
+// higher grade. Before the random sample, the LIMIT took the lower grade's
+// rows only and the loop could never ramp.
+func TestNextPickCandidatesLopsidedWindow(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+
+	seedNextProblemsBulk(ctx, t, pool, 1000, 600, "6B+", "jug")
+	seedNextProblemsBulk(ctx, t, pool, 2000, 20, "6C", "pocket")
+
+	got, err := catalog.NextPickCandidates(ctx, pool, catalog.NextPickQuery{
+		Holdsetup: 1, Angle: 40, GradeMin: "6B+", GradeMax: "6C",
+	})
+	if err != nil {
+		t.Fatalf("NextPickCandidates: %v", err)
+	}
+
+	has6C := false
+	for _, c := range got {
+		if c.Grade == "6C" {
+			has6C = true
+			break
+		}
+	}
+	if !has6C {
+		t.Fatalf("sample of %d rows from a [6B+ x600, 6C x20] window has no 6C row — the ramp fix is not working", len(got))
+	}
+}
+
 func TestNextPickCandidates(t *testing.T) {
 	ctx := context.Background()
 	pool := testdb.New(t)
