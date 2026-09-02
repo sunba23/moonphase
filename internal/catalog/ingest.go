@@ -247,6 +247,10 @@ func (i *Ingester) ingestBatchFast(ctx context.Context, batch []preparedProblem)
 		return 0, fmt.Errorf("batch write children: %w", err)
 	}
 
+	if err := RecomputeHoldTypes(ctx, tx, ids...); err != nil {
+		return 0, fmt.Errorf("recompute hold types: %w", err)
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return 0, fmt.Errorf("commit tx: %w", err)
 	}
@@ -435,6 +439,10 @@ func (i *Ingester) ingestProblemSequential(ctx context.Context, pp preparedProbl
 
 	if err := replaceMoves(ctx, tx, problemID, pp.problem.Holdsetup, pp.moves); err != nil {
 		return 0, 0, 0, fmt.Errorf("replace moves: %w", err)
+	}
+
+	if err := RecomputeHoldTypes(ctx, tx, problemID); err != nil {
+		return 0, 0, 0, fmt.Errorf("recompute hold types: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
