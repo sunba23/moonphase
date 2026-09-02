@@ -107,6 +107,70 @@ func (s *Store) StartSession(ctx context.Context, in Session, first SessionProbl
 	return &out, nil
 }
 
+// ShownProblem is one row of a session's ordered problem list, joined to its
+// grade and dominant hold type. RPE / Completion are nil for the current
+// unrated problem.
+type ShownProblem struct {
+	Seq             int
+	ProblemID       int64
+	ConfigurationID int64
+	Grade           string
+	Dominant        string
+	RPE             *int16
+	Completion      *string
+}
+
+// ShownProblems returns every problem a session has shown, seq-ordered, with
+// grade and dominant hold type. The last entry is the current problem.
+func (s *Store) ShownProblems(ctx context.Context, sessionID string) ([]ShownProblem, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT sp.seq, sp.problem_id, sp.problem_configuration_id,
+		       pc.grade, COALESCE(pht.dominant, ''), sp.rpe, sp.completion
+		FROM session_problems sp
+		JOIN problem_configurations pc ON pc.id = sp.problem_configuration_id
+		LEFT JOIN problem_hold_types pht ON pht.problem_id = sp.problem_id
+		WHERE sp.session_id = $1
+		ORDER BY sp.seq
+	`, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("session: query shown problems: %w", err)
+	}
+	defer rows.Close()
+
+	var out []ShownProblem
+	for rows.Next() {
+		var p ShownProblem
+		if err := rows.Scan(&p.Seq, &p.ProblemID, &p.ConfigurationID, &p.Grade, &p.Dominant, &p.RPE, &p.Completion); err != nil {
+			return nil, fmt.Errorf("session: scan shown problem: %w", err)
+		}
+		out = append(out, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("session: iterate shown problems: %w", err)
+	}
+
+	return out, nil
+}
+
+// LatestProblem returns the highest-seq session_problems row, or ErrNotFound.
+func (s *Store) LatestProblem(ctx context.Context, sessionID string) (*SessionProblem, error) {
+	var sp SessionProblem
+	err := s.pool.QueryRow(ctx, `
+		SELECT seq, problem_id, problem_configuration_id
+		FROM session_problems
+		WHERE session_id = $1
+		ORDER BY seq DESC
+		LIMIT 1
+	`, sessionID).Scan(&sp.Seq, &sp.ProblemID, &sp.ConfigurationID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("session: latest problem: %w", err)
+	}
+	return &sp, nil
+}
+
 // FirstProblem returns the seq-0 session_problems row, or ErrNotFound.
 func (s *Store) FirstProblem(ctx context.Context, sessionID string) (*SessionProblem, error) {
 	var sp SessionProblem
