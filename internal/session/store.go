@@ -171,6 +171,63 @@ func (s *Store) LatestProblem(ctx context.Context, sessionID string) (*SessionPr
 	return &sp, nil
 }
 
+// AdvanceSession writes the current problem's result and inserts the next
+// problem in one transaction. The guarded UPDATE is the idempotency key: it
+// only touches the highest-seq, still-unrated row, so a duplicate or
+// out-of-order submit affects 0 rows and returns ErrStaleResult with no
+// second insert. Takes plain scalars + SessionProblem only — no recommender
+// import.
+func (s *Store) AdvanceSession(ctx context.Context, sessionID string, curSeq int, rpe int16, completion string, next SessionProblem) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("session: begin advance tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	tag, err := tx.Exec(ctx, `
+		UPDATE session_problems
+		SET rpe = $1, completion = $2, climbed_at = now()
+		WHERE session_id = $3 AND seq = $4 AND rpe IS NULL
+		  AND seq = (SELECT max(seq) FROM session_problems WHERE session_id = $3)
+	`, rpe, completion, sessionID, curSeq)
+	if err != nil {
+		return fmt.Errorf("session: update result: %w", err)
+	}
+	if tag.RowsAffected() != 1 {
+		return ErrStaleResult
+	}
+
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO session_problems (session_id, seq, problem_id, problem_configuration_id)
+		VALUES ($1, $2, $3, $4)
+	`, sessionID, curSeq+1, next.ProblemID, next.ConfigurationID); err != nil {
+		return fmt.Errorf("session: insert next problem: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("session: commit advance tx: %w", err)
+	}
+	return nil
+}
+
+// EndSession flips an active session to 'ended' and stamps ended_at. A
+// non-owner, a missing id, and an already-ended session are indistinguishable
+// — all return ErrNotFound.
+func (s *Store) EndSession(ctx context.Context, sessionID, userID string) error {
+	tag, err := s.pool.Exec(ctx, `
+		UPDATE sessions
+		SET status = 'ended', ended_at = now()
+		WHERE id = $1 AND user_id = $2 AND status = 'active'
+	`, sessionID, userID)
+	if err != nil {
+		return fmt.Errorf("session: end session: %w", err)
+	}
+	if tag.RowsAffected() != 1 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // FirstProblem returns the seq-0 session_problems row, or ErrNotFound.
 func (s *Store) FirstProblem(ctx context.Context, sessionID string) (*SessionProblem, error) {
 	var sp SessionProblem

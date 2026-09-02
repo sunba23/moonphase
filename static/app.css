@@ -78,3 +78,65 @@ body {
 .hold--foot {
 	border-color: #aaa;
 }
+
+/* --- Main Session result form (S-04) --- */
+
+.result {
+	margin-top: 1rem;
+}
+
+.result__status {
+	border: 0;
+	padding: 0;
+	margin: 0 0 1rem;
+	display: grid;
+	gap: 0.5rem;
+}
+
+.result__status legend {
+	font-weight: 600;
+	margin-bottom: 0.5rem;
+}
+
+.result__status label {
+	display: block;
+	padding: 1rem;
+	font-size: 1.15rem;
+	border: 2px solid #ccc;
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.result__status label:has(input:checked) {
+	border-color: #0074d9;
+	background: #eaf4fd;
+}
+
+.result__rpe {
+	display: none;
+}
+
+.result__status:has(input:checked) ~ .result__rpe {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 0.5rem;
+}
+
+.result__rpe button {
+	padding: 1rem 0;
+	font-size: 1.25rem;
+	border: 2px solid #ccc;
+	border-radius: 8px;
+	background: #fff;
+	cursor: pointer;
+}
+
+.session__end {
+	margin-top: 1.5rem;
+}
+
+.session__end button {
+	width: 100%;
+	padding: 0.9rem;
+	font-size: 1.05rem;
+}
