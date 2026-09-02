@@ -74,7 +74,7 @@ func hubContent(m HubModel) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</p><button class=\"hub__start\" hx-post=\"/session\" hx-swap=\"none\">Main Session</button><p><a href=\"/profile\">Profile</a></p></main>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</p><button class=\"hub__start\" hx-post=\"/session\" hx-swap=\"none\">Main Session</button><p><a href=\"/profile\">Profile</a></p><p><a href=\"/sessions\">Past sessions</a></p></main>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
