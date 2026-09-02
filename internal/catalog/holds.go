@@ -96,10 +96,12 @@ func (s *HoldStore) ApplyTags(ctx context.Context, holdsetup int, rows []HoldRow
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	var unmatched []string
+	var tagged []string
 	for _, r := range rows {
 		if r.PrimaryType == "" {
 			continue
 		}
+		tagged = append(tagged, r.GridRef)
 
 		modifiers := r.Modifiers
 		if modifiers == nil {
@@ -124,6 +126,20 @@ func (s *HoldStore) ApplyTags(ctx context.Context, holdsetup int, rows []HoldRow
 
 	if len(unmatched) > 0 {
 		return fmt.Errorf("catalog: no matching hold for grid_ref(s) %s on holdsetup %d (typo, or board not yet ingested); applied nothing", strings.Join(unmatched, ", "), holdsetup)
+	}
+
+	// Keep problem_hold_types current for every problem whose moves reference a
+	// retagged grid ref, in the same transaction as the tag write.
+	if len(tagged) > 0 {
+		ids, err := problemIDsForGridRefs(ctx, tx, holdsetup, tagged)
+		if err != nil {
+			return err
+		}
+		if len(ids) > 0 {
+			if err := RecomputeHoldTypes(ctx, tx, ids...); err != nil {
+				return err
+			}
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {

@@ -29,9 +29,30 @@ type SessionProblem struct {
 	ConfigurationID int64
 }
 
-// StatusActive is the only session status this slice writes. S-04 extends the
-// value set (ended, etc.).
-const StatusActive = "active"
+// Session status values. StatusActive is set at creation; StatusEnded is set
+// by the explicit End-session action (FR-010). The partial unique index frees
+// the active slot as soon as status moves off 'active'.
+const (
+	StatusActive = "active"
+	StatusEnded  = "ended"
+)
+
+// Completion status values for a per-problem result (FR-008).
+const (
+	CompletionSent   = "sent"
+	CompletionFailed = "failed"
+	CompletionBailed = "bailed"
+)
+
+// ValidCompletion reports whether s is one of the three completion statuses.
+func ValidCompletion(s string) bool {
+	switch s {
+	case CompletionSent, CompletionFailed, CompletionBailed:
+		return true
+	default:
+		return false
+	}
+}
 
 var (
 	// ErrNoActiveSession is returned by ActiveForUser when the user has no
@@ -42,4 +63,10 @@ var (
 	// ErrActiveExists is returned by StartSession when the one-active-session
 	// partial unique index rejects a concurrent second start.
 	ErrActiveExists = errors.New("session: an active session already exists")
+	// ErrStaleResult is returned by AdvanceSession when the guarded UPDATE
+	// affects no row — a duplicate or out-of-order result submit.
+	ErrStaleResult = errors.New("session: stale result")
+	// ErrSessionNotActive is returned when an operation needs an active
+	// session but the session is already ended.
+	ErrSessionNotActive = errors.New("session: not active")
 )
