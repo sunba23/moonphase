@@ -156,6 +156,12 @@ func newTestRouter(verifier *auth.Verifier, authClient *auth.AuthClient, pc Prof
 			r.Get("/session/{sessionID}", func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			})
+			r.Post("/session/{sessionID}/result", func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			r.Post("/session/{sessionID}/end", func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
 		})
 	})
 
@@ -216,17 +222,28 @@ func TestRouter_ProtectedRoutesRedirectWithoutSession(t *testing.T) {
 	id := startTestJWKS(t)
 	router := newTestRouter(id.newVerifier(t), auth.NewAuthClient(id.cfg), &fakeProfileChecker{err: profile.ErrNotFound})
 
-	for _, path := range []string{"/", "/api/me", "/profile", "/session/x"} {
+	for _, tc := range protectedRoutes {
 		rec := httptest.NewRecorder()
-		router.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, nil))
+		router.ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), tc.method, tc.path, nil))
 
 		if rec.Code != http.StatusFound {
-			t.Fatalf("%s: expected 302, got %d", path, rec.Code)
+			t.Fatalf("%s %s: expected 302, got %d", tc.method, tc.path, rec.Code)
 		}
 		if loc := rec.Header().Get("Location"); loc != "/signin" {
-			t.Fatalf("%s: expected redirect to /signin, got %q", path, loc)
+			t.Fatalf("%s %s: expected redirect to /signin, got %q", tc.method, tc.path, loc)
 		}
 	}
+}
+
+// protectedRoutes is every route inside the auth+onboarding-gated group, with
+// the method it is mounted as.
+var protectedRoutes = []struct{ method, path string }{
+	{http.MethodGet, "/"},
+	{http.MethodGet, "/api/me"},
+	{http.MethodGet, "/profile"},
+	{http.MethodGet, "/session/x"},
+	{http.MethodPost, "/session/x/result"},
+	{http.MethodPost, "/session/x/end"},
 }
 
 func TestRouter_SessionWithoutProfileRedirectsToOnboarding(t *testing.T) {
@@ -234,17 +251,17 @@ func TestRouter_SessionWithoutProfileRedirectsToOnboarding(t *testing.T) {
 	router := newTestRouter(id.newVerifier(t), auth.NewAuthClient(id.cfg), &fakeProfileChecker{err: profile.ErrNotFound})
 	token := id.signToken(t, "user-1")
 
-	for _, path := range []string{"/", "/api/me", "/profile", "/session/x"} {
-		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, nil)
+	for _, tc := range protectedRoutes {
+		req := httptest.NewRequestWithContext(context.Background(), tc.method, tc.path, nil)
 		req.AddCookie(&http.Cookie{Name: "mp_session", Value: token})
 		rec := httptest.NewRecorder()
 		router.ServeHTTP(rec, req)
 
 		if rec.Code != http.StatusFound {
-			t.Fatalf("%s: expected 302, got %d", path, rec.Code)
+			t.Fatalf("%s %s: expected 302, got %d", tc.method, tc.path, rec.Code)
 		}
 		if loc := rec.Header().Get("Location"); loc != "/onboarding" {
-			t.Fatalf("%s: expected redirect to /onboarding, got %q", path, loc)
+			t.Fatalf("%s %s: expected redirect to /onboarding, got %q", tc.method, tc.path, loc)
 		}
 	}
 }
@@ -269,14 +286,14 @@ func TestRouter_SessionWithProfileReachesProtectedRoutes(t *testing.T) {
 	router := newTestRouter(id.newVerifier(t), auth.NewAuthClient(id.cfg), &fakeProfileChecker{profile: &profile.Profile{UserID: "user-1"}})
 	token := id.signToken(t, "user-1")
 
-	for _, path := range []string{"/", "/api/me", "/profile", "/session/x"} {
-		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, nil)
+	for _, tc := range protectedRoutes {
+		req := httptest.NewRequestWithContext(context.Background(), tc.method, tc.path, nil)
 		req.AddCookie(&http.Cookie{Name: "mp_session", Value: token})
 		rec := httptest.NewRecorder()
 		router.ServeHTTP(rec, req)
 
 		if rec.Code != http.StatusOK {
-			t.Fatalf("%s: expected 200, got %d", path, rec.Code)
+			t.Fatalf("%s %s: expected 200, got %d", tc.method, tc.path, rec.Code)
 		}
 	}
 }

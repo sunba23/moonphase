@@ -14,10 +14,17 @@ type HubModel struct {
 	MaxGrade  string
 }
 
-// SessionModel carries the first problem for the live-session view.
-type SessionModel struct {
+// SessionCardModel backs the swappable #session-card fragment: one problem
+// plus the result form that advances the loop.
+type SessionCardModel struct {
 	SessionID string
+	Seq       int
 	Problem   catalog.ProblemView
+}
+
+// SessionModel wraps the card for a full-page render.
+type SessionModel struct {
+	Card SessionCardModel
 }
 
 // UnsupportedBoardModel backs the "switch your board" page shown when a
