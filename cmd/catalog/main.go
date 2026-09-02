@@ -87,8 +87,10 @@ func runHolds(args []string) error {
 		return runHoldsStatus(args[1:])
 	case "tag":
 		return runHoldsTag(args[1:])
+	case "recompute-composition":
+		return runHoldsRecomputeComposition(args[1:])
 	default:
-		return fmt.Errorf("unknown holds command %q, expected: inventory, load-tags, status, tag", args[0])
+		return fmt.Errorf("unknown holds command %q, expected: inventory, load-tags, status, tag, recompute-composition", args[0])
 	}
 }
 
@@ -268,6 +270,38 @@ func runHoldsTag(args []string) error {
 	if err := catalog.RunInteractiveTag(context.Background(), store, holdsetup, outPath); err != nil {
 		return fmt.Errorf("catalog holds tag: %w", err)
 	}
+
+	return nil
+}
+
+func runHoldsRecomputeComposition(args []string) error {
+	fs := flag.NewFlagSet("holds recompute-composition", flag.ExitOnError)
+	board := fs.String("board", "", "board year (2016, 2017, 2019, or 2024)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	if *board == "" {
+		return errors.New("catalog holds recompute-composition: --board is required")
+	}
+
+	holdsetup, err := catalog.ResolveBoardYear(*board)
+	if err != nil {
+		return fmt.Errorf("catalog holds recompute-composition: %w", err)
+	}
+
+	pool, cleanup, err := connectDB()
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	n, err := catalog.RecomputeHoldTypesForBoard(context.Background(), pool, holdsetup)
+	if err != nil {
+		return fmt.Errorf("catalog holds recompute-composition: %w", err)
+	}
+
+	fmt.Printf("recomputed composition for %d problems on board %s\n", n, *board)
 
 	return nil
 }
