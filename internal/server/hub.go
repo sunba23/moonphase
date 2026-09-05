@@ -40,7 +40,7 @@ func (h *hubPages) handlePage(w http.ResponseWriter, r *http.Request) {
 		boardName = "Unknown board"
 	}
 
-	renderPage(w, r, pages.HubPage(pages.HubModel{
+	renderAppPage(w, r, "MoonPhase", pages.HubContent(pages.HubModel{
 		BoardName: boardName,
 		Angle:     current.Angle,
 		MaxGrade:  current.MaxGrade,

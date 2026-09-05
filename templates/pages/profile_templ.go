@@ -14,7 +14,7 @@ import (
 	"github.com/sunba23/moonphase/templates/layout"
 )
 
-func profileForm(model ProfileModel) templ.Component {
+func ProfileForm(model ProfileModel) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -225,7 +225,7 @@ func ProfilePage(model ProfileModel) templ.Component {
 			templ_7745c5c3_Var9 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = layout.Page("Profile", profileForm(model)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layout.Page("Profile", ProfileForm(model)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

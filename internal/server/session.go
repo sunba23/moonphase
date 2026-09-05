@@ -52,7 +52,7 @@ func (s *sessionPages) handleStart(w http.ResponseWriter, r *http.Request) {
 
 	if _, ok := catalog.BoardImageYear(prof.Holdsetup); !ok {
 		name, _ := catalog.BoardName(prof.Holdsetup)
-		renderPage(w, r, pages.UnsupportedBoardPage(pages.UnsupportedBoardModel{BoardName: name}), http.StatusOK)
+		renderAppPage(w, r, "Switch your board", pages.UnsupportedBoardContent(pages.UnsupportedBoardModel{BoardName: name}), http.StatusOK)
 		return
 	}
 
@@ -136,9 +136,9 @@ func (s *sessionPages) handleView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	renderPage(w, r, pages.SessionPage(pages.SessionModel{Card: pages.SessionCardModel{
+	renderAppPage(w, r, "Session", pages.SessionCard(pages.SessionCardModel{
 		SessionID: sessionID, Seq: latest.Seq, Problem: *view,
-	}}), http.StatusOK)
+	}), http.StatusOK)
 }
 
 // handleResult (POST /session/{sessionID}/result) records the current

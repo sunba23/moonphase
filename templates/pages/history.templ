@@ -6,7 +6,7 @@ import (
 	"github.com/sunba23/moonphase/templates/layout"
 )
 
-templ historyListContent(m HistoryListModel) {
+templ HistoryListContent(m HistoryListModel) {
 	<div class="hub">
 		<h1>Past sessions</h1>
 		if len(m.Sessions) == 0 {
@@ -28,10 +28,10 @@ templ historyListContent(m HistoryListModel) {
 }
 
 templ HistoryListPage(m HistoryListModel) {
-	@layout.Page("Past sessions", historyListContent(m))
+	@layout.Page("Past sessions", HistoryListContent(m))
 }
 
-templ historyDetailContent(m HistoryDetailModel) {
+templ HistoryDetailContent(m HistoryDetailModel) {
 	<div class="hub">
 		<h1>Session</h1>
 		<p class="history__meta">
@@ -55,10 +55,10 @@ templ historyDetailContent(m HistoryDetailModel) {
 }
 
 templ HistoryDetailPage(m HistoryDetailModel) {
-	@layout.Page("Session", historyDetailContent(m))
+	@layout.Page("Session", HistoryDetailContent(m))
 }
 
-templ historyProblemContent(m HistoryProblemModel) {
+templ HistoryProblemContent(m HistoryProblemModel) {
 	<div class="session">
 		<h1>{ m.Problem.Name }</h1>
 		<p class="session__meta">
@@ -78,5 +78,5 @@ templ historyProblemContent(m HistoryProblemModel) {
 }
 
 templ HistoryProblemPage(m HistoryProblemModel) {
-	@layout.Page("Problem", historyProblemContent(m))
+	@layout.Page("Problem", HistoryProblemContent(m))
 }
