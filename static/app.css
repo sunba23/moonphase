@@ -648,30 +648,28 @@ body:has(#session-card) {
 	accent-color: var(--bailed);
 }
 
-/* The ramp: 10 segments, rising height + fill left to right — it should read
-   as effort, not a rainbow. Hidden until a completion status is chosen. */
+/* RPE 1–10: a calm, uniform grid. Each button pairs its digit with an effort
+   face that goes from relaxed to straining. Hidden until a completion status
+   is chosen. */
 .result__rpe {
 	display: none;
 }
 
 .result__status:has(input:checked) ~ .result__rpe {
-	display: flex;
-	align-items: flex-end;
-	gap: 3px;
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: var(--space-2);
 	margin-top: var(--space-3);
 }
 
 .result__rpe button {
-	position: relative;
-	z-index: 0;
-	flex: 1;
-	min-width: 2rem;
-	min-height: 44px;
 	display: flex;
-	align-items: flex-end;
+	flex-direction: column;
+	align-items: center;
 	justify-content: center;
-	padding: var(--space-1) 0;
-	overflow: hidden;
+	gap: 2px;
+	min-height: 48px;
+	padding: var(--space-2) 0;
 	font: 600 var(--step--1) / 1 var(--font-mono);
 	color: var(--ink);
 	background: var(--surface);
@@ -680,98 +678,10 @@ body:has(#session-card) {
 	cursor: pointer;
 }
 
-.result__rpe button::before {
-	content: "";
-	position: absolute;
-	inset: auto 0 0 0;
-	z-index: -1;
-	background: var(--accent);
-	opacity: 0.16;
-}
-
-.result__rpe button:nth-child(1)::before {
-	height: 16%;
-}
-
-.result__rpe button:nth-child(2)::before {
-	height: 24%;
-}
-
-.result__rpe button:nth-child(3)::before {
-	height: 32%;
-}
-
-.result__rpe button:nth-child(4)::before {
-	height: 40%;
-}
-
-.result__rpe button:nth-child(5)::before {
-	height: 48%;
-}
-
-.result__rpe button:nth-child(6)::before {
-	height: 58%;
-	opacity: 0.26;
-}
-
-.result__rpe button:nth-child(7)::before {
-	height: 68%;
-	opacity: 0.34;
-}
-
-.result__rpe button:nth-child(8)::before {
-	height: 80%;
-	opacity: 0.42;
-}
-
-.result__rpe button:nth-child(9)::before {
-	height: 90%;
-	opacity: 0.5;
-}
-
-.result__rpe button:nth-child(10)::before {
-	height: 100%;
-	opacity: 0.58;
-}
-
-.result__rpe button:nth-child(1) {
-	height: 44px;
-}
-
-.result__rpe button:nth-child(2) {
-	height: 46px;
-}
-
-.result__rpe button:nth-child(3) {
-	height: 48px;
-}
-
-.result__rpe button:nth-child(4) {
-	height: 51px;
-}
-
-.result__rpe button:nth-child(5) {
-	height: 54px;
-}
-
-.result__rpe button:nth-child(6) {
-	height: 58px;
-}
-
-.result__rpe button:nth-child(7) {
-	height: 62px;
-}
-
-.result__rpe button:nth-child(8) {
-	height: 66px;
-}
-
-.result__rpe button:nth-child(9) {
-	height: 71px;
-}
-
-.result__rpe button:nth-child(10) {
-	height: 76px;
+.rpe__face {
+	width: 1.15rem;
+	height: 1.15rem;
+	color: var(--ink-soft);
 }
 
 .session__end {

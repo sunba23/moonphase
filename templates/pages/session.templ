@@ -81,10 +81,35 @@ templ resultForm(sessionID string, seq int) {
 		</fieldset>
 		<div class="result__rpe" role="group" aria-label="Rate the effort, 1 to 10">
 			for n := 1; n <= 10; n++ {
-				<button type="submit" name="rpe" value={ strconv.Itoa(n) }>{ strconv.Itoa(n) }</button>
+				<button type="submit" name="rpe" value={ strconv.Itoa(n) }>
+					@rpeFace(n)
+					<span class="rpe__num">{ strconv.Itoa(n) }</span>
+				</button>
 			}
 		</div>
 	</form>
+}
+
+// rpeFace draws a simple effort face for an RPE value — relaxed at the low
+// end, straining at the top. Decorative only (aria-hidden); the button's
+// accessible name stays the bare digit.
+templ rpeFace(n int) {
+	<svg class="rpe__face" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+		<circle cx="12" cy="12" r="9"></circle>
+		<circle cx="9" cy="10" r="0.7" fill="currentColor" stroke="none"></circle>
+		<circle cx="15" cy="10" r="0.7" fill="currentColor" stroke="none"></circle>
+		switch {
+			case n <= 3:
+				<path d="M8.5 14.3c1 1.2 2.1 1.8 3.5 1.8s2.5-.6 3.5-1.8" stroke-linecap="round"></path>
+			case n <= 6:
+				<path d="M8.5 15h7" stroke-linecap="round"></path>
+			case n <= 8:
+				<path d="M8.5 15.9c1-1 2.1-1.5 3.5-1.5s2.5.5 3.5 1.5" stroke-linecap="round"></path>
+			default:
+				<path d="M8.2 16.2c1-1.5 2.3-2.2 3.8-2.2s2.8.7 3.8 2.2" stroke-linecap="round"></path>
+				<path d="M7.6 8.2l2.2 1.1M16.4 8.2l-2.2 1.1" stroke-linecap="round"></path>
+		}
+	</svg>
 }
 
 templ SessionCard(m SessionCardModel) {
