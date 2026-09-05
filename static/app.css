@@ -835,6 +835,13 @@ body:has(#session-card) {
 	margin: 0;
 }
 
+.history__nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2) var(--space-4);
+	margin-top: var(--space-5);
+}
+
 /* --- Read-only problem card ----------------------------------------- */
 .problem {
 	margin-top: var(--space-4);
