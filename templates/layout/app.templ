@@ -16,7 +16,7 @@ templ appHeader(nav NavModel) {
 		<a class="wordmark" href="/">MoonPhase</a>
 		<div class="appbar__context">
 			<span class="chip">{ nav.BoardName }</span>
-			<span class="chip chip--mono">{ strconv.Itoa(int(nav.Angle)) }°</span>
+			<span class="chip">{ strconv.Itoa(int(nav.Angle)) }°</span>
 			<span class="chip">max { nav.MaxGrade }</span>
 		</div>
 	</header>

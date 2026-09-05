@@ -44,9 +44,9 @@ templ moonBoardOverlay(year string, holds []catalog.HoldPlacement) {
 // problem name. The grade chip carries a test hook — three plain-text chips
 // are ambiguous to a role/label locator.
 templ problemMeta(p catalog.ProblemView) {
-	<p class="chips session__meta">
+	<p class="chips">
 		<span class="chip chip--mono" data-testid="card-grade">{ p.Grade }</span>
-		<span class="chip chip--mono">{ strconv.Itoa(int(p.Angle)) }°</span>
+		<span class="chip">{ strconv.Itoa(int(p.Angle)) }°</span>
 		<span class="chip">{ p.BoardYear }</span>
 	</p>
 }
