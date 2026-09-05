@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-// TestHoldXY_ReferencePoints pins the overlay calibration to the four measured
-// reference holds on the 600x923 board image (see geometry.go). col is 0-based
-// (A=0), row is 1-based (1 bottom, 18 top).
+// TestHoldXY_ReferencePoints pins the overlay calibration to the four corner
+// hold mounts measured on the 600x923 board image (the polygon in geometry.go).
+// col is 0-based (A=0), row is 1-based (1 bottom, 18 top).
 func TestHoldXY_ReferencePoints(t *testing.T) {
 	const tol = 1.0 // percentage points
 
@@ -17,10 +17,10 @@ func TestHoldXY_ReferencePoints(t *testing.T) {
 		wantX    float64
 		wantY    float64
 	}{
-		{"A18 top-left", 0, 18, 14.17, 8.56},
-		{"K18 top-right", 10, 18, 87.17, 8.67},
-		{"A1 bottom-left", 0, 1, 13.00, 93.82},
-		{"K1 bottom-right", 10, 1, 86.83, 93.82},
+		{"A18 top-left", 0, 18, 14.67, 8.88},
+		{"K18 top-right", 10, 18, 91.58, 8.78},
+		{"A1 bottom-left", 0, 1, 14.25, 93.72},
+		{"K1 bottom-right", 10, 1, 91.50, 93.88},
 	}
 
 	for _, tc := range cases {
