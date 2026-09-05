@@ -66,12 +66,13 @@ async function deleteSupabaseUser(userId: string): Promise<void> {
   }
 }
 
-// Reads the grade off the problem card's catalog-detail line ("6B · 40° · 2016").
-async function readCardGrade(page: Page, boardYear: string): Promise<string> {
-  const meta = page.getByText(new RegExp(`·\\s*40°\\s*·\\s*${boardYear}`));
-  await expect(meta).toBeVisible();
-  const text = ((await meta.textContent()) ?? '').trim();
-  return text.split('·')[0].trim();
+// Reads the grade off the problem card. The grade is its own chip now (the
+// catalog-detail line became discrete chips); it carries a test hook because
+// three plain-text sibling chips are ambiguous to a role/label locator.
+async function readCardGrade(page: Page): Promise<string> {
+  const grade = page.getByTestId('card-grade');
+  await expect(grade).toBeVisible();
+  return ((await grade.textContent()) ?? '').trim();
 }
 
 // Waits for htmx to finish swapping AND settling the new #session-card, so its
@@ -140,7 +141,7 @@ async function signUpOnboardStart(page: Page, board: Board): Promise<string> {
   await page.getByLabel('Angle').selectOption('40');
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  const startSession = page.getByRole('button', { name: 'Main Session' });
+  const startSession = page.getByRole('button', { name: 'Start session' });
   await expect(startSession).toBeVisible();
 
   const me = await page.request.get('/api/me');
@@ -163,13 +164,13 @@ for (const board of BOARDS) {
     });
 
     // FR-011: the first recommendation is at the board's minimum grade.
-    const g0 = await readCardGrade(page, board.year);
+    const g0 = await readCardGrade(page);
     expect(g0).toBe(board.minGrade);
 
     // --- Easy send: allowed to step up at most one ladder grade, never below
     //     the minimum, never above the session max ---
     await submitResult(page, 'Sent', 2);
-    const g1 = await readCardGrade(page, board.year);
+    const g1 = await readCardGrade(page);
     expect(page.url()).toBe(sessionUrl); // swapped in place, no navigation
     expect(gradeIndex(g1)).toBeGreaterThanOrEqual(gradeIndex(g0));
     expect(gradeIndex(g1)).toBeLessThanOrEqual(gradeIndex(g0) + 1);
@@ -178,13 +179,13 @@ for (const board of BOARDS) {
     // --- Hard failure: the next pick must NOT be strictly harder (FR-012 /
     //     US-01 hard invariant) ---
     await submitResult(page, 'Failed', 9);
-    const g2 = await readCardGrade(page, board.year);
+    const g2 = await readCardGrade(page);
     expect(page.url()).toBe(sessionUrl);
     expect(gradeIndex(g2)).toBeLessThanOrEqual(gradeIndex(g1));
 
     // --- Bail: same rule ---
     await submitResult(page, 'Bailed', 5);
-    const g3 = await readCardGrade(page, board.year);
+    const g3 = await readCardGrade(page);
     expect(gradeIndex(g3)).toBeLessThanOrEqual(gradeIndex(g2));
 
     // The whole loop stayed on one URL and never full-reloaded.
@@ -197,7 +198,7 @@ for (const board of BOARDS) {
     // --- End the session -> back to a hub that can start again ---
     await page.getByRole('button', { name: 'End session' }).click();
     await page.waitForURL((url) => new URL(url).pathname === '/');
-    await expect(page.getByRole('button', { name: 'Main Session' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Start session' })).toBeVisible();
   });
 }
 
@@ -216,7 +217,7 @@ test('board 2016: re-selecting a completion status moves the choice without subm
     if (r.url().endsWith('/result') && r.method() === 'POST') resultPosts += 1;
   });
 
-  const g0 = await readCardGrade(page, board.year);
+  const g0 = await readCardGrade(page);
 
   // Walk through all three statuses. Each selection reveals the RPE grid and
   // moves the checked radio; none of them submits.
@@ -235,7 +236,7 @@ test('board 2016: re-selecting a completion status moves the choice without subm
 
   // Nothing submitted: same card, same URL, zero /result requests so far.
   expect(page.url()).toBe(sessionUrl);
-  expect(await readCardGrade(page, board.year)).toBe(g0);
+  expect(await readCardGrade(page)).toBe(g0);
   expect(resultPosts).toBe(0);
 
   // The RPE button is what submits — do it once, with the final selection.
@@ -275,11 +276,11 @@ test('board 2016: a run of easy sends ramps grade past the dense floor', async (
 
   const min = gradeIndex(board.minGrade);
   const maxAllowed = gradeIndex('8B+');
-  const seen: number[] = [gradeIndex(await readCardGrade(page, board.year))];
+  const seen: number[] = [gradeIndex(await readCardGrade(page))];
 
   for (let i = 0; i < 6; i++) {
     await submitResult(page, 'Sent', 2);
-    seen.push(gradeIndex(await readCardGrade(page, board.year)));
+    seen.push(gradeIndex(await readCardGrade(page)));
   }
 
   const peak = Math.max(...seen);

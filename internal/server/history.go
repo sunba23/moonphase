@@ -60,7 +60,7 @@ func (h *historyPages) handleList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	renderPage(w, r, pages.HistoryListPage(pages.HistoryListModel{Sessions: rows}), http.StatusOK)
+	renderAppPage(w, r, "Past sessions", pages.HistoryListContent(pages.HistoryListModel{Sessions: rows}), http.StatusOK)
 }
 
 // ownedEndedSession resolves the {sessionID} route param to the caller's ended
@@ -109,7 +109,7 @@ func (h *historyPages) handleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name, _ := catalog.BoardName(sess.Holdsetup)
-	renderPage(w, r, pages.HistoryDetailPage(pages.HistoryDetailModel{
+	renderAppPage(w, r, "Session", pages.HistoryDetailContent(pages.HistoryDetailModel{
 		SessionID: sess.ID,
 		BoardName: name,
 		StartedAt: sess.StartedAt.Format(historyDateFormat),
@@ -151,7 +151,7 @@ func (h *historyPages) handleProblem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	renderPage(w, r, pages.HistoryProblemPage(pages.HistoryProblemModel{
+	renderAppPage(w, r, "Problem", pages.HistoryProblemContent(pages.HistoryProblemModel{
 		SessionID:  sess.ID,
 		Seq:        seq,
 		RPE:        ref.RPE,

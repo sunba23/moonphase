@@ -5,5 +5,5 @@ package static
 
 import "embed"
 
-//go:embed app.css htmx.min.js moonboard
+//go:embed app.css htmx.min.js moonboard fonts favicon.svg
 var FS embed.FS

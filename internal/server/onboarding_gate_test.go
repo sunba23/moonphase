@@ -63,6 +63,31 @@ func TestOnboardingGate_ExistingProfile(t *testing.T) {
 	}
 }
 
+func TestOnboardingGate_StashesProfileInContext(t *testing.T) {
+	want := &profile.Profile{UserID: "user-1", Holdsetup: 1, Angle: 40, MaxGrade: "7A"}
+	pc := &fakeProfileChecker{profile: want}
+
+	var got *profile.Profile
+	var ok bool
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got, ok = profileFromContext(r.Context())
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
+	req = req.WithContext(auth.WithUserID(req.Context(), "user-1"))
+	rec := httptest.NewRecorder()
+
+	OnboardingGate(pc)(next).ServeHTTP(rec, req)
+
+	if !ok {
+		t.Fatal("expected profile in context for next handler")
+	}
+	if got != want {
+		t.Fatalf("expected the gate-loaded profile, got %+v", got)
+	}
+}
+
 func TestOnboardingGate_OtherError(t *testing.T) {
 	pc := &fakeProfileChecker{err: errors.New("db exploded")}
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

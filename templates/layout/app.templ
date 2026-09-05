@@ -1,0 +1,46 @@
+package layout
+
+import "strconv"
+
+// NavModel is the training context shown in the shared app header on every
+// authenticated screen. It duplicates nothing the page body needs — the body
+// no longer carries this line once the header owns it.
+type NavModel struct {
+	BoardName string
+	Angle     int16
+	MaxGrade  string
+}
+
+templ appHeader(nav NavModel) {
+	<header class="appbar">
+		<a class="wordmark" href="/">
+			<svg class="wordmark__mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+				<path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 0 1 .162.819A8.97 8.97 0 0 0 9 6a9 9 0 0 0 9 9 8.97 8.97 0 0 0 3.463-.69.75.75 0 0 1 .981.98 10.503 10.503 0 0 1-9.694 6.46c-5.799 0-10.5-4.7-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 0 1 .818.162Z" clip-rule="evenodd"></path>
+			</svg>
+			MoonPhase
+		</a>
+		<div class="appbar__context">
+			<span class="chip">{ nav.BoardName }</span>
+			<span class="chip">{ strconv.Itoa(int(nav.Angle)) }°</span>
+			<span class="chip">max { nav.MaxGrade }</span>
+		</div>
+	</header>
+}
+
+// AppPage is the full-page shell for authenticated screens: the shared header
+// above the page content. Pre-onboarding pages keep Page (no header).
+templ AppPage(title string, nav NavModel, content templ.Component) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			@head(title)
+		</head>
+		<body>
+			<a class="skip-link" href="#main">Skip to content</a>
+			@appHeader(nav)
+			<main id="main">
+				@content
+			</main>
+		</body>
+	</html>
+}

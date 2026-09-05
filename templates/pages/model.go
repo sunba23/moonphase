@@ -7,13 +7,6 @@ type AuthFormModel struct {
 	Error string
 }
 
-// HubModel is the climber's training context shown on the hub.
-type HubModel struct {
-	BoardName string
-	Angle     int16
-	MaxGrade  string
-}
-
 // SessionCardModel backs the swappable #session-card fragment: one problem
 // plus the result form that advances the loop.
 type SessionCardModel struct {
