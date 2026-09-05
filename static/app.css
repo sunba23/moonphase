@@ -126,12 +126,18 @@ html {
 
 body {
 	margin: 0;
+	min-height: 100dvh;
+	display: flex;
+	flex-direction: column;
 	background: var(--ground);
 	color: var(--ink);
 	font: var(--step-0) / 1.6 var(--font-body);
 }
 
 #main {
+	flex: 1 1 auto;
+	min-height: 0;
+	width: 100%;
 	max-width: 30rem;
 	margin: 0 auto;
 	padding: var(--space-5) var(--space-4) var(--space-8);
@@ -306,10 +312,12 @@ input[type="checkbox"] {
 }
 
 .appbar {
+	flex: 0 0 auto;
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: var(--space-2) var(--space-4);
+	width: 100%;
 	max-width: 30rem;
 	margin: 0 auto;
 	padding: var(--space-3) var(--space-4);
@@ -385,11 +393,73 @@ input[type="checkbox"] {
 	border-top: 1px solid var(--edge);
 }
 
+/* --- Session screen ----------------------------------------------------- */
+
+/* The live card fills the space under the header and splits into a scrolling
+   problem area and a pinned action zone, so the result controls and End stay
+   under the thumb however tall the board photo and hold list run. */
+/* Pin the live session to exactly one viewport so the scroll happens inside
+   the card, not the page — the action zone must never leave the screen. */
+body:has(#session-card) {
+	height: 100dvh;
+	overflow: hidden;
+}
+
+#main:has(#session-card) {
+	display: flex;
+	max-width: none;
+	padding: 0;
+}
+
+#session-card {
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	max-width: 30rem;
+	margin: 0 auto;
+}
+
+.session__scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	padding: var(--space-4) var(--space-4) var(--space-5);
+}
+
+.session__scroll h1 {
+	margin-bottom: var(--space-3);
+}
+
+.session__actions {
+	flex: 0 0 auto;
+	padding: var(--space-3) var(--space-4) var(--space-4);
+	background: var(--surface);
+	border-top: 1px solid var(--edge);
+	box-shadow: var(--shadow-1);
+}
+
+/* One settle on the incoming card after a rating — the payoff moment.
+   Suppressed by the global reduced-motion guard in Layer 2. */
+@keyframes card-settle {
+	from {
+		opacity: 0.3;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+#session-card.htmx-added,
+#session-card.htmx-settling {
+	animation: card-settle 180ms ease-out;
+}
+
 /* Board-image hold overlay. */
 .board {
 	position: relative;
-	max-width: 600px;
-	margin: 0 auto var(--space-5);
+	margin: 0 auto var(--space-4);
 }
 
 .board__img {
@@ -403,9 +473,8 @@ input[type="checkbox"] {
 	width: 7%;
 	aspect-ratio: 1;
 	border: 3px solid;
-	border-radius: 50%;
+	border-radius: var(--r-full);
 	transform: translate(-50%, -50%);
-	box-sizing: border-box;
 }
 
 .hold--start {
@@ -424,82 +493,231 @@ input[type="checkbox"] {
 	border-color: var(--hold-foot);
 }
 
-/* Main Session result form. */
+/* Holds — a compact, scannable coordinate list. */
+.holds {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	border-top: 1px solid var(--edge);
+}
+
+.holds__item {
+	display: flex;
+	align-items: baseline;
+	gap: var(--space-3);
+	padding: var(--space-2) 0;
+	border-bottom: 1px solid var(--edge);
+	font-size: var(--step--1);
+}
+
+.holds__ref {
+	flex: 0 0 3.5ch;
+	font-family: var(--font-mono);
+}
+
+.holds__type {
+	flex: 1;
+}
+
+.holds__role {
+	flex: 0 0 auto;
+	color: var(--ink-soft);
+}
+
+/* Result form — completion tap-cards + the RPE effort ramp. */
 .result {
-	margin-top: 1rem;
+	margin: 0;
 }
 
 .result__status {
 	border: 0;
 	padding: 0;
-	margin: 0 0 1rem;
-	display: grid;
-	gap: 0.5rem;
+	margin: 0;
 }
 
 .result__status legend {
+	padding: 0;
+	margin-bottom: var(--space-2);
 	font-weight: 600;
-	margin-bottom: 0.5rem;
 }
 
-.result__status label {
-	display: block;
-	padding: 1rem;
-	font-size: 1.15rem;
-	border: 2px solid var(--edge);
+.result__status-row {
+	display: flex;
+	gap: var(--space-2);
+}
+
+.result__status-row label {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+	min-height: 44px;
+	margin: 0;
+	padding: var(--space-2);
+	font-size: var(--step--1);
+	font-weight: 500;
+	border: 1px solid var(--edge);
 	border-radius: var(--r-sm);
 	cursor: pointer;
 }
 
-.result__status label:has(input:checked) {
+.result__status-row label:has(input:checked) {
 	border-color: var(--accent);
-	background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+	background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+	font-weight: 600;
 }
 
+.result__status-row input {
+	accent-color: var(--accent);
+}
+
+/* The ramp: 10 segments, rising height + fill left to right — it should read
+   as effort, not a rainbow. Hidden until a completion status is chosen. */
 .result__rpe {
 	display: none;
 }
 
 .result__status:has(input:checked) ~ .result__rpe {
-	display: grid;
-	grid-template-columns: repeat(5, 1fr);
-	gap: 0.5rem;
+	display: flex;
+	align-items: flex-end;
+	gap: 3px;
+	margin-top: var(--space-3);
 }
 
 .result__rpe button {
-	padding: 1rem 0;
-	font-size: 1.25rem;
-	border: 2px solid var(--edge);
-	border-radius: var(--r-sm);
-	background: var(--surface);
+	position: relative;
+	z-index: 0;
+	flex: 1;
+	min-width: 2rem;
+	min-height: 44px;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	padding: var(--space-1) 0;
+	overflow: hidden;
+	font: 600 var(--step--1) / 1 var(--font-mono);
 	color: var(--ink);
+	background: var(--surface);
+	border: 1px solid var(--edge);
+	border-radius: var(--r-sm);
 	cursor: pointer;
 }
 
+.result__rpe button::before {
+	content: "";
+	position: absolute;
+	inset: auto 0 0 0;
+	z-index: -1;
+	background: var(--accent);
+	opacity: 0.16;
+}
+
+.result__rpe button:nth-child(1)::before {
+	height: 16%;
+}
+
+.result__rpe button:nth-child(2)::before {
+	height: 24%;
+}
+
+.result__rpe button:nth-child(3)::before {
+	height: 32%;
+}
+
+.result__rpe button:nth-child(4)::before {
+	height: 40%;
+}
+
+.result__rpe button:nth-child(5)::before {
+	height: 48%;
+}
+
+.result__rpe button:nth-child(6)::before {
+	height: 58%;
+	opacity: 0.26;
+}
+
+.result__rpe button:nth-child(7)::before {
+	height: 68%;
+	opacity: 0.34;
+}
+
+.result__rpe button:nth-child(8)::before {
+	height: 80%;
+	opacity: 0.42;
+}
+
+.result__rpe button:nth-child(9)::before {
+	height: 90%;
+	opacity: 0.5;
+}
+
+.result__rpe button:nth-child(10)::before {
+	height: 100%;
+	opacity: 0.58;
+}
+
+.result__rpe button:nth-child(1) {
+	height: 44px;
+}
+
+.result__rpe button:nth-child(2) {
+	height: 46px;
+}
+
+.result__rpe button:nth-child(3) {
+	height: 48px;
+}
+
+.result__rpe button:nth-child(4) {
+	height: 51px;
+}
+
+.result__rpe button:nth-child(5) {
+	height: 54px;
+}
+
+.result__rpe button:nth-child(6) {
+	height: 58px;
+}
+
+.result__rpe button:nth-child(7) {
+	height: 62px;
+}
+
+.result__rpe button:nth-child(8) {
+	height: 66px;
+}
+
+.result__rpe button:nth-child(9) {
+	height: 71px;
+}
+
+.result__rpe button:nth-child(10) {
+	height: 76px;
+}
+
+.session__end {
+	margin-top: var(--space-3);
+}
+
+/* Full-screen notice (unsupported board). */
+.notice {
+	margin-top: var(--space-6);
+}
+
+.notice .btn {
+	display: inline-flex;
+}
+
+/* History (restyled in Phase 5). */
 .session__meta,
 .history__meta {
-	color: var(--ink-soft);
-}
-
-.holds {
-	padding-left: 1.1rem;
-}
-
-.holds__role {
 	color: var(--ink-soft);
 }
 
 .history a {
 	display: block;
 	padding: var(--space-2) 0;
-}
-
-.session__end {
-	margin-top: 1.5rem;
-}
-
-.session__end button {
-	width: 100%;
-	padding: 0.9rem;
-	font-size: 1.05rem;
 }
