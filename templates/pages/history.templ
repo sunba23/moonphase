@@ -25,6 +25,9 @@ templ HistoryListContent(m HistoryListModel) {
 					</li>
 				}
 			</ul>
+			<nav class="history__nav">
+				<a href="/">Back to hub</a>
+			</nav>
 		}
 	</div>
 }
@@ -55,7 +58,10 @@ templ HistoryDetailContent(m HistoryDetailModel) {
 				}
 			</ol>
 		}
-		<p><a href="/sessions">Back to past sessions</a></p>
+		<nav class="history__nav">
+			<a href="/sessions">Back to past sessions</a>
+			<a href="/">Back to hub</a>
+		</nav>
 	</div>
 }
 
