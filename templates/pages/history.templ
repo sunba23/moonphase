@@ -18,7 +18,7 @@ templ HistoryListContent(m HistoryListModel) {
 							<span class="histrow__date">{ s.StartedAt }</span>
 							<span class="chips">
 								<span class="chip">{ s.BoardName }</span>
-								<span class="chip chip--mono">{ strconv.Itoa(int(s.Angle)) }°</span>
+								<span class="chip">{ strconv.Itoa(int(s.Angle)) }°</span>
 							</span>
 							<span class="histrow__count">{ strconv.Itoa(s.ClimbedCount) } problems climbed</span>
 						</a>
@@ -35,7 +35,7 @@ templ HistoryDetailContent(m HistoryDetailModel) {
 		<p class="chips">
 			<span class="chip">{ m.StartedAt }</span>
 			<span class="chip">{ m.BoardName }</span>
-			<span class="chip chip--mono">{ strconv.Itoa(int(m.Angle)) }°</span>
+			<span class="chip">{ strconv.Itoa(int(m.Angle)) }°</span>
 		</p>
 		if len(m.Problems) == 0 {
 			<p class="history-empty">No problems climbed in this session.</p>
