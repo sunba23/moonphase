@@ -7,14 +7,17 @@ type boardGeometry struct {
 	originX, pitchX, originY, pitchY float64
 }
 
-// geometryByYear holds per-image overlay constants, calibrated against the
-// shipped 600x923 board images (static/moonboard/<year>.jpg) by overlaying a
-// full A1..K18 grid and eyeballing the fit. Both images share the same grid
-// geometry: column A centre ~10.3%, column pitch ~7.84%; row 18 centre
-// ~7.8%, row pitch ~4.98% (row 18 at the top, row 1 at the bottom).
+// geometryByYear holds per-image overlay constants. Both shipped board images
+// (static/moonboard/<year>.jpg, 600x923) show the same physical MoonBoard —
+// the same 11x18 grid, only different resin holds — so one calibration serves
+// both. Fitted (least squares) to four measured reference holds on the 600x923
+// image: A18 (85,79), K18 (523,80), A1 (78,866), K1 (521,866), i.e. as
+// percentages A18 (14.17,8.56), K18 (87.17,8.67), A1 (13.00,93.82),
+// K1 (86.83,93.82). Row 18 is at the top, row 1 at the bottom. The per-year
+// map is kept so a future edition could diverge.
 var geometryByYear = map[string]boardGeometry{
-	"2016": {originX: 10.3, pitchX: 7.84, originY: 7.8, pitchY: 4.98},
-	"2024": {originX: 10.3, pitchX: 7.84, originY: 7.8, pitchY: 4.98},
+	"2016": {originX: 13.6, pitchX: 7.34, originY: 8.6, pitchY: 5.01},
+	"2024": {originX: 13.6, pitchX: 7.34, originY: 8.6, pitchY: 5.01},
 }
 
 // HoldXY returns the percentage position of a hold's centre on the board
