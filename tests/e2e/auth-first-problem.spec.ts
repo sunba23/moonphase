@@ -70,7 +70,7 @@ test('a new account can sign up, onboard, and get a first problem recommended', 
 
   // Onboarding HX-redirects to the hub. The "Main Session" button being visible
   // is the real signal that the gate let the now-onboarded user through.
-  const startSession = page.getByRole('button', { name: 'Main Session' });
+  const startSession = page.getByRole('button', { name: 'Start session' });
   await expect(startSession).toBeVisible();
 
   // Capture the user id now (via the authenticated API, reusing the browser

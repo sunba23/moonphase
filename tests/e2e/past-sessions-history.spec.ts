@@ -112,7 +112,7 @@ test('a climber reviews a finished session\'s climbed problems from history', as
   await page.getByLabel('Angle').selectOption('40');
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  const startSession = page.getByRole('button', { name: 'Main Session' });
+  const startSession = page.getByRole('button', { name: 'Start session' });
   await expect(startSession).toBeVisible();
 
   const me = await page.request.get('/api/me');
@@ -184,7 +184,7 @@ test('a freshly onboarded climber with no finished sessions sees the empty state
   await page.getByLabel('Angle').selectOption('40');
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  await expect(page.getByRole('button', { name: 'Main Session' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start session' })).toBeVisible();
 
   const me = await page.request.get('/api/me');
   expect(me.ok()).toBeTruthy();
@@ -195,5 +195,5 @@ test('a freshly onboarded climber with no finished sessions sees the empty state
   await page.waitForURL((url) => new URL(url).pathname === '/sessions');
 
   await expect(page.getByText(/no sessions yet/i)).toBeVisible();
-  await expect(page.getByRole('link', { name: /start a main session/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /start a session/i })).toBeVisible();
 });

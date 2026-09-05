@@ -36,7 +36,7 @@ func HistoryListContent(m HistoryListModel) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if len(m.Sessions) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"history-empty\"><p>No sessions yet. Your first Main Session shows up here once you end it.</p><p><a class=\"btn btn--secondary\" href=\"/\">Start a Main Session</a></p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"history-empty\"><p>No sessions yet. Your first session shows up here once you end it.</p><p><a class=\"btn btn--secondary\" href=\"/\">Start a session</a></p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

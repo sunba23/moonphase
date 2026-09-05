@@ -338,10 +338,19 @@ label:has(input:focus-visible) {
 }
 
 .wordmark {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
 	font: 600 var(--step-1) / 1 var(--font-display);
 	color: var(--ink);
 	text-decoration: none;
 	letter-spacing: -0.01em;
+}
+
+.wordmark__mark {
+	width: 1.05em;
+	height: 1.05em;
+	flex: 0 0 auto;
 }
 
 .appbar__context {
@@ -393,6 +402,23 @@ label:has(input:focus-visible) {
 	flex-direction: column;
 	gap: var(--space-3);
 	margin-top: var(--space-5);
+}
+
+.hub__link {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-4);
+	color: var(--ink);
+	text-decoration: none;
+	font-weight: 500;
+}
+
+.hub__link-icon {
+	flex: 0 0 auto;
+	width: 1.4rem;
+	height: 1.4rem;
+	color: var(--ink-soft);
 }
 
 /* Profile — the edit card plus a low-emphasis sign-out. */
