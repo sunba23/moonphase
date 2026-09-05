@@ -122,22 +122,36 @@ func (s *sessionPages) handleView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	latest, err := s.sessions.LatestProblem(ctx, sessionID)
+	shown, err := s.sessions.ShownProblems(ctx, sessionID)
 	if err != nil {
-		s.logger.Error().Err(err).Msg("session: load latest problem failed")
+		s.logger.Error().Err(err).Msg("session: load shown problems failed")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
+	if len(shown) == 0 {
+		s.logger.Error().Str("session", sessionID).Msg("session: active session has no shown problems")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	current := shown[len(shown)-1]
 
-	view, err := catalog.ProblemDetail(ctx, s.pool, latest.ConfigurationID)
+	view, err := catalog.ProblemDetail(ctx, s.pool, current.ConfigurationID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("session: load problem detail failed")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
+	ladder, err := catalog.GradeLadder(ctx, s.pool, sess.Holdsetup, sess.Angle)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("session: load grade ladder failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
 	renderAppPage(w, r, "Session", pages.SessionCard(pages.SessionCardModel{
-		SessionID: sessionID, Seq: latest.Seq, Problem: *view,
+		SessionID: sessionID, Seq: current.Seq, Problem: *view,
+		Panel: buildSessionPanel(ladder, shown),
 	}), http.StatusOK)
 }
 
@@ -243,8 +257,24 @@ func (s *sessionPages) handleResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Reload the shown list so it carries the just-rated problem and the new
+	// pick; both feed the Session-balance panel.
+	shownAfter, err := s.sessions.ShownProblems(ctx, sessionID)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("session: reload shown problems failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	ladder, err := catalog.GradeLadder(ctx, s.pool, sess.Holdsetup, sess.Angle)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("session: load grade ladder failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
 	renderPage(w, r, pages.SessionCard(pages.SessionCardModel{
 		SessionID: sessionID, Seq: seq + 1, Problem: *view,
+		Panel: buildSessionPanel(ladder, shownAfter),
 	}), http.StatusOK)
 }
 

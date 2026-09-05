@@ -96,5 +96,8 @@ test('a new account can sign up, onboard, and get a first problem recommended', 
   await expect(card.getByTestId('card-grade')).toBeVisible();
   await expect(card.getByText('40°', { exact: true })).toBeVisible();
   await expect(card.getByText('2016', { exact: true })).toBeVisible();
+  // The per-hold breakdown lives in a collapsed "Holds" panel — open it and
+  // confirm the first hold row renders (proves the catalog hold read worked).
+  await card.getByText('Holds', { exact: true }).click();
   await expect(page.getByRole('listitem').first()).toBeVisible();
 });

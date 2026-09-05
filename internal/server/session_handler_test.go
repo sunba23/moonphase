@@ -122,6 +122,12 @@ func TestHandleResult(t *testing.T) {
 	if body := rec.Body.String(); !strings.HasPrefix(strings.TrimSpace(body), `<div id="session-card"`) {
 		t.Fatalf("body is not a bare session-card fragment: %.80s", body)
 	}
+	// One problem climbed (crimp) -> the Session-balance panel renders with a
+	// terse rationale for the new pick.
+	if body := rec.Body.String(); !strings.Contains(body, `class="panel"`) ||
+		!strings.Contains(body, "Session balance") {
+		t.Fatalf("fragment is missing the Session-balance panel: %s", body)
+	}
 
 	// The old row is rated and a seq-1 row now exists.
 	shown, _ := store.ShownProblems(ctx, started.ID)
@@ -184,6 +190,12 @@ func TestHandleView_ShowsLatestProblem(t *testing.T) {
 
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Cand 811") {
 		t.Fatalf("handleView body did not show the latest problem: code %d", rec.Code)
+	}
+	// One climbed problem -> the Session-balance panel is present on the
+	// resumed page, and it is a <details> (closed by default).
+	if body := rec.Body.String(); !strings.Contains(body, `<details class="panel"`) ||
+		!strings.Contains(body, "Session balance") {
+		t.Fatalf("handleView body is missing the Session-balance panel")
 	}
 }
 
