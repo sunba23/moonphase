@@ -141,7 +141,7 @@ async function signUpOnboardStart(page: Page, board: Board): Promise<string> {
   await page.getByLabel('Angle').selectOption('40');
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  const startSession = page.getByRole('button', { name: 'Main Session' });
+  const startSession = page.getByRole('button', { name: 'Start session' });
   await expect(startSession).toBeVisible();
 
   const me = await page.request.get('/api/me');
@@ -198,7 +198,7 @@ for (const board of BOARDS) {
     // --- End the session -> back to a hub that can start again ---
     await page.getByRole('button', { name: 'End session' }).click();
     await page.waitForURL((url) => new URL(url).pathname === '/');
-    await expect(page.getByRole('button', { name: 'Main Session' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Start session' })).toBeVisible();
   });
 }
 

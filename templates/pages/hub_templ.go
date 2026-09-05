@@ -29,7 +29,7 @@ func HubContent() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"hub\"><h1>Ready to climb</h1><button class=\"btn btn--full\" hx-post=\"/session\" hx-swap=\"none\">Main Session</button><nav class=\"hub__links\"><a href=\"/profile\">Profile</a> <a href=\"/sessions\">Past sessions</a></nav></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"hub\"><h1>Ready to climb</h1><button class=\"btn btn--full\" hx-post=\"/session\" hx-swap=\"none\">Start session</button><nav class=\"hub__links\"><a class=\"card hub__link\" href=\"/profile\"><svg class=\"hub__link-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"8\" r=\"3.25\"></circle> <path d=\"M5 20a7 7 0 0 1 14 0\" stroke-linecap=\"round\"></path></svg> <span>Profile</span></a> <a class=\"card hub__link\" href=\"/sessions\"><svg class=\"hub__link-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"8.25\"></circle> <path d=\"M12 7.5V12l3 2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg> <span>Past sessions</span></a></nav></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
