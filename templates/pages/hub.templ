@@ -6,7 +6,7 @@ import (
 	"github.com/sunba23/moonphase/templates/layout"
 )
 
-templ hubContent(m HubModel) {
+templ HubContent(m HubModel) {
 	<div class="hub">
 		<h1>MoonPhase</h1>
 		<p class="hub__context">
@@ -19,5 +19,5 @@ templ hubContent(m HubModel) {
 }
 
 templ HubPage(m HubModel) {
-	@layout.Page("MoonPhase", hubContent(m))
+	@layout.Page("MoonPhase", HubContent(m))
 }

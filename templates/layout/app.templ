@@ -1,0 +1,41 @@
+package layout
+
+import "strconv"
+
+// NavModel is the training context shown in the shared app header on every
+// authenticated screen. It duplicates nothing the page body needs — the body
+// no longer carries this line once the header owns it.
+type NavModel struct {
+	BoardName string
+	Angle     int16
+	MaxGrade  string
+}
+
+templ appHeader(nav NavModel) {
+	<header class="appbar">
+		<a class="wordmark" href="/">MoonPhase</a>
+		<div class="appbar__context">
+			<span class="chip">{ nav.BoardName }</span>
+			<span class="chip chip--mono">{ strconv.Itoa(int(nav.Angle)) }°</span>
+			<span class="chip">max { nav.MaxGrade }</span>
+		</div>
+	</header>
+}
+
+// AppPage is the full-page shell for authenticated screens: the shared header
+// above the page content. Pre-onboarding pages keep Page (no header).
+templ AppPage(title string, nav NavModel, content templ.Component) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			@head(title)
+		</head>
+		<body>
+			<a class="skip-link" href="#main">Skip to content</a>
+			@appHeader(nav)
+			<main id="main">
+				@content
+			</main>
+		</body>
+	</html>
+}

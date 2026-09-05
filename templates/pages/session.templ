@@ -85,7 +85,7 @@ templ SessionPage(m SessionModel) {
 	@layout.Page("Session", SessionCard(m.Card))
 }
 
-templ unsupportedBoardContent(m UnsupportedBoardModel) {
+templ UnsupportedBoardContent(m UnsupportedBoardModel) {
 	<div class="hub">
 		<h1>Switch your board</h1>
 		<p>
@@ -97,5 +97,5 @@ templ unsupportedBoardContent(m UnsupportedBoardModel) {
 }
 
 templ UnsupportedBoardPage(m UnsupportedBoardModel) {
-	@layout.Page("Switch your board", unsupportedBoardContent(m))
+	@layout.Page("Switch your board", UnsupportedBoardContent(m))
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/sunba23/moonphase/templates/layout"
 )
 
-func historyListContent(m HistoryListModel) templ.Component {
+func HistoryListContent(m HistoryListModel) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -154,7 +154,7 @@ func HistoryListPage(m HistoryListModel) templ.Component {
 			templ_7745c5c3_Var7 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = layout.Page("Past sessions", historyListContent(m)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layout.Page("Past sessions", HistoryListContent(m)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -162,7 +162,7 @@ func HistoryListPage(m HistoryListModel) templ.Component {
 	})
 }
 
-func historyDetailContent(m HistoryDetailModel) templ.Component {
+func HistoryDetailContent(m HistoryDetailModel) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -341,7 +341,7 @@ func HistoryDetailPage(m HistoryDetailModel) templ.Component {
 			templ_7745c5c3_Var17 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = layout.Page("Session", historyDetailContent(m)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layout.Page("Session", HistoryDetailContent(m)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -349,7 +349,7 @@ func HistoryDetailPage(m HistoryDetailModel) templ.Component {
 	})
 }
 
-func historyProblemContent(m HistoryProblemModel) templ.Component {
+func HistoryProblemContent(m HistoryProblemModel) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -547,7 +547,7 @@ func HistoryProblemPage(m HistoryProblemModel) templ.Component {
 			templ_7745c5c3_Var29 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = layout.Page("Problem", historyProblemContent(m)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layout.Page("Problem", HistoryProblemContent(m)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
