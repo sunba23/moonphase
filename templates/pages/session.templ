@@ -86,14 +86,14 @@ templ SessionPage(m SessionModel) {
 }
 
 templ unsupportedBoardContent(m UnsupportedBoardModel) {
-	<main class="hub">
+	<div class="hub">
 		<h1>Switch your board</h1>
 		<p>
 			Your profile is set to { m.BoardName }, which MoonPhase can't run a session on
 			yet. Choose 2016 or 2024 in your profile to start a session.
 		</p>
 		<p><a href="/profile">Go to Profile</a></p>
-	</main>
+	</div>
 }
 
 templ UnsupportedBoardPage(m UnsupportedBoardModel) {

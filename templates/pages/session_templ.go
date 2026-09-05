@@ -469,7 +469,7 @@ func unsupportedBoardContent(m UnsupportedBoardModel) templ.Component {
 			templ_7745c5c3_Var24 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<main class=\"hub\"><h1>Switch your board</h1><p>Your profile is set to ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<div class=\"hub\"><h1>Switch your board</h1><p>Your profile is set to ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -482,7 +482,7 @@ func unsupportedBoardContent(m UnsupportedBoardModel) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, ", which MoonPhase can't run a session on yet. Choose 2016 or 2024 in your profile to start a session.</p><p><a href=\"/profile\">Go to Profile</a></p></main>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, ", which MoonPhase can't run a session on yet. Choose 2016 or 2024 in your profile to start a session.</p><p><a href=\"/profile\">Go to Profile</a></p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
