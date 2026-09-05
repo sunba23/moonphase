@@ -13,6 +13,27 @@ type SessionCardModel struct {
 	SessionID string
 	Seq       int
 	Problem   catalog.ProblemView
+	// Panel is the collapsed "Session balance" secondary surface. Nil before
+	// anything is climbed (seq 0); the template renders nothing then.
+	Panel *SessionPanel
+}
+
+// HoldTypeBar is one row of the session hold-type tally.
+type HoldTypeBar struct {
+	Type  string
+	Count int
+}
+
+// SessionPanel backs the collapsed <details> panel below the board: the
+// session-so-far hold-type tally plus a terse, non-prose rationale for the
+// current pick. Built at render time from the session's shown problems — the
+// recommender is not involved.
+type SessionPanel struct {
+	Bars     []HoldTypeBar // always the 5 allowed types, fixed order
+	MaxCount int           // largest bar count, for width scaling; >= 1
+	Climbed  int           // problems climbed so far this session
+	GradeTag string        // "Easier" | "Holding" | "Harder"; "" when unknown
+	HoldTag  string        // "Off crimp" | "Onto sloper" | "More jug"; "" when none
 }
 
 // SessionModel wraps the card for a full-page render.
