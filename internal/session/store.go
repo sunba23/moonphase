@@ -228,6 +228,89 @@ func (s *Store) EndSession(ctx context.Context, sessionID, userID string) error 
 	return nil
 }
 
+// ListForUser returns the caller's ended sessions, newest first, each with a
+// count of climbed (rated) problems. Returns a non-nil empty slice when the
+// user has no ended sessions. FR-013.
+func (s *Store) ListForUser(ctx context.Context, userID string) ([]SessionSummary, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT s.id, s.holdsetup, s.angle, s.started_at, COUNT(sp.rpe) AS climbed
+		FROM sessions s
+		LEFT JOIN session_problems sp ON sp.session_id = s.id
+		WHERE s.user_id = $1 AND s.status = 'ended'
+		GROUP BY s.id
+		ORDER BY s.started_at DESC
+	`, userID)
+	if err != nil {
+		return nil, fmt.Errorf("session: query list for user: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]SessionSummary, 0)
+	for rows.Next() {
+		var sm SessionSummary
+		if err := rows.Scan(&sm.ID, &sm.Holdsetup, &sm.Angle, &sm.StartedAt, &sm.ClimbedCount); err != nil {
+			return nil, fmt.Errorf("session: scan session summary: %w", err)
+		}
+		out = append(out, sm)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("session: iterate session summaries: %w", err)
+	}
+	return out, nil
+}
+
+// ClimbedProblems returns every rated problem of one session in climb order,
+// with the catalog name and grade for display. Not user-scoped — the handler
+// has already verified ownership via Get. Returns a non-nil empty slice for a
+// session with no rated problems. FR-014.
+func (s *Store) ClimbedProblems(ctx context.Context, sessionID string) ([]ClimbedProblem, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT sp.seq, p.name, pc.grade, sp.rpe, sp.completion, sp.climbed_at
+		FROM session_problems sp
+		JOIN problem_configurations pc ON pc.id = sp.problem_configuration_id
+		JOIN problems p ON p.id = pc.problem_id
+		WHERE sp.session_id = $1 AND sp.rpe IS NOT NULL
+		ORDER BY sp.seq
+	`, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("session: query climbed problems: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]ClimbedProblem, 0)
+	for rows.Next() {
+		var cp ClimbedProblem
+		if err := rows.Scan(&cp.Seq, &cp.Name, &cp.Grade, &cp.RPE, &cp.Completion, &cp.ClimbedAt); err != nil {
+			return nil, fmt.Errorf("session: scan climbed problem: %w", err)
+		}
+		out = append(out, cp)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("session: iterate climbed problems: %w", err)
+	}
+	return out, nil
+}
+
+// ClimbedProblemAt resolves one (sessionID, seq) to the problem configuration
+// id plus the recorded RPE / completion, for the read-only problem card.
+// Returns ErrNotFound for a missing seq, an out-of-range seq, and the trailing
+// unrated row. FR-014.
+func (s *Store) ClimbedProblemAt(ctx context.Context, sessionID string, seq int) (*ClimbedProblemRef, error) {
+	var ref ClimbedProblemRef
+	err := s.pool.QueryRow(ctx, `
+		SELECT problem_configuration_id, rpe, completion
+		FROM session_problems
+		WHERE session_id = $1 AND seq = $2 AND rpe IS NOT NULL
+	`, sessionID, seq).Scan(&ref.ConfigurationID, &ref.RPE, &ref.Completion)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("session: climbed problem at %d: %w", seq, err)
+	}
+	return &ref, nil
+}
+
 // FirstProblem returns the seq-0 session_problems row, or ErrNotFound.
 func (s *Store) FirstProblem(ctx context.Context, sessionID string) (*SessionProblem, error) {
 	var sp SessionProblem
