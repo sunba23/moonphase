@@ -226,7 +226,8 @@ button[type="submit"] {
 	cursor: pointer;
 }
 
-.btn--secondary {
+.btn.btn--secondary,
+button.btn--secondary[type="submit"] {
 	color: var(--accent);
 	background: transparent;
 	border-color: var(--edge);
@@ -333,22 +334,55 @@ input[type="checkbox"] {
    Layer 4 — screen rules (transitional; replaced per phase)
    -------------------------------------------------------------------------- */
 
-.hub__context {
-	color: var(--muted);
-	font-size: var(--step-1);
+/* Auth + onboarding — a single centred card with room to breathe. */
+.authcard {
+	margin-top: var(--space-6);
 }
 
-.hub__start {
-	display: block;
-	width: 100%;
-	padding: 1rem;
-	margin: 1.5rem 0;
-	font-size: 1.25rem;
-	color: var(--accent-ink);
-	background: var(--accent);
-	border: none;
-	border-radius: var(--r-sm);
-	cursor: pointer;
+.authcard h1 {
+	margin-bottom: var(--space-2);
+}
+
+.authcard__help {
+	margin-bottom: var(--space-5);
+	color: var(--ink-soft);
+}
+
+.authcard form {
+	margin-bottom: 0;
+}
+
+.authcard__alt {
+	margin: var(--space-5) 0 0;
+	font-size: var(--step--1);
+	color: var(--ink-soft);
+}
+
+/* Hub — lean: one primary action, secondary links. */
+.hub {
+	margin-top: var(--space-5);
+}
+
+.hub h1 {
+	margin-bottom: var(--space-5);
+}
+
+.hub__links {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	margin-top: var(--space-5);
+}
+
+/* Profile — the edit card plus a low-emphasis sign-out. */
+.profile {
+	margin-top: var(--space-5);
+}
+
+.profile .signout {
+	margin: var(--space-6) 0 0;
+	padding-top: var(--space-5);
+	border-top: 1px solid var(--edge);
 }
 
 /* Board-image hold overlay. */

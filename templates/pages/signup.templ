@@ -3,20 +3,25 @@ package pages
 import "github.com/sunba23/moonphase/templates/layout"
 
 templ signupForm(model AuthFormModel) {
-	<form id="authForm" hx-post="/signup" hx-select="#authForm" hx-swap="outerHTML">
-		if model.Error != "" {
-			<p class="error">{ model.Error }</p>
-		}
-		<label>
-			Email
-			<input type="email" name="email" required/>
-		</label>
-		<label>
-			Password
-			<input type="password" name="password" required/>
-		</label>
-		<button type="submit">Sign up</button>
-	</form>
+	<div class="authcard card">
+		<h1>Create an account</h1>
+		<p class="authcard__help">Your grade, board, and session history sync across every device.</p>
+		<form id="authForm" hx-post="/signup" hx-select="#authForm" hx-swap="outerHTML">
+			if model.Error != "" {
+				<p class="field-error">{ model.Error }</p>
+			}
+			<label>
+				Email
+				<input type="email" name="email" required/>
+			</label>
+			<label>
+				Password
+				<input type="password" name="password" required/>
+			</label>
+			<button type="submit" class="btn btn--full">Sign up</button>
+		</form>
+		<p class="authcard__alt">Already have an account? <a href="/signin">Sign in</a></p>
+	</div>
 }
 
 templ SignupPage(model AuthFormModel) {
