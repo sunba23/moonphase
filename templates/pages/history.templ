@@ -7,7 +7,7 @@ import (
 )
 
 templ historyListContent(m HistoryListModel) {
-	<main class="hub">
+	<div class="hub">
 		<h1>Past sessions</h1>
 		if len(m.Sessions) == 0 {
 			<p>No sessions yet.</p>
@@ -24,7 +24,7 @@ templ historyListContent(m HistoryListModel) {
 			</ul>
 			<p><a href="/">Back to hub</a></p>
 		}
-	</main>
+	</div>
 }
 
 templ HistoryListPage(m HistoryListModel) {
@@ -32,7 +32,7 @@ templ HistoryListPage(m HistoryListModel) {
 }
 
 templ historyDetailContent(m HistoryDetailModel) {
-	<main class="hub">
+	<div class="hub">
 		<h1>Session</h1>
 		<p class="history__meta">
 			{ m.StartedAt } · { m.BoardName } · { strconv.Itoa(int(m.Angle)) }°
@@ -51,7 +51,7 @@ templ historyDetailContent(m HistoryDetailModel) {
 			</ol>
 		}
 		<p><a href="/sessions">Back to past sessions</a></p>
-	</main>
+	</div>
 }
 
 templ HistoryDetailPage(m HistoryDetailModel) {
@@ -59,7 +59,7 @@ templ HistoryDetailPage(m HistoryDetailModel) {
 }
 
 templ historyProblemContent(m HistoryProblemModel) {
-	<main class="session">
+	<div class="session">
 		<h1>{ m.Problem.Name }</h1>
 		<p class="session__meta">
 			{ m.Problem.Grade } · { strconv.Itoa(int(m.Problem.Angle)) }° · { m.Problem.BoardYear }
@@ -74,7 +74,7 @@ templ historyProblemContent(m HistoryProblemModel) {
 			You climbed this — RPE { strconv.Itoa(int(m.RPE)) } · { m.Completion }
 		</p>
 		<p><a href={ "/sessions/" + m.SessionID }>Back to session</a></p>
-	</main>
+	</div>
 }
 
 templ HistoryProblemPage(m HistoryProblemModel) {

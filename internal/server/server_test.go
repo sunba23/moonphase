@@ -191,6 +191,8 @@ func TestRouter_StaticAssetsServedWithCorrectContentType(t *testing.T) {
 		{"/static/app.css", "text/css"},
 		{"/static/htmx.min.js", "text/javascript"},
 		{"/static/moonboard/2016.jpg", "image/jpeg"},
+		{"/static/favicon.svg", "image/svg+xml"},
+		{"/static/fonts/fraunces-latin.woff2", "font/woff2"},
 	}
 
 	for _, tc := range cases {

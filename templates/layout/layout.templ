@@ -1,15 +1,32 @@
 package layout
 
+// head is the shared document head for every page — the pre-onboarding shell
+// (Page) and the authenticated shell (AppPage) both render it so the two never
+// drift.
+templ head(title string) {
+	<meta charset="utf-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<meta name="theme-color" content="#E9DCC3" media="(prefers-color-scheme: light)"/>
+	<meta name="theme-color" content="#141A2A" media="(prefers-color-scheme: dark)"/>
+	<title>{ title } · MoonPhase</title>
+	<link rel="icon" href="/static/favicon.svg"/>
+	<link rel="preload" as="font" type="font/woff2" href="/static/fonts/fraunces-latin.woff2" crossorigin/>
+	<link rel="preload" as="font" type="font/woff2" href="/static/fonts/instrument-sans-latin.woff2" crossorigin/>
+	<link rel="stylesheet" href="/static/app.css"/>
+	<script src="/static/htmx.min.js" defer></script>
+}
+
 templ Page(title string, content templ.Component) {
 	<!DOCTYPE html>
-	<html>
+	<html lang="en">
 		<head>
-			<title>{ title } · MoonPhase</title>
-			<link rel="stylesheet" href="/static/app.css"/>
-			<script src="/static/htmx.min.js"></script>
+			@head(title)
 		</head>
 		<body>
-			@content
+			<a class="skip-link" href="#main">Skip to content</a>
+			<main id="main">
+				@content
+			</main>
 		</body>
 	</html>
 }
