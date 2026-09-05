@@ -33,6 +33,51 @@ type UnsupportedBoardModel struct {
 	BoardName string
 }
 
+// HistorySessionRow is one row of the past-sessions list (FR-013). StartedAt
+// is pre-formatted in the handler so the template does no date work.
+type HistorySessionRow struct {
+	ID           string
+	BoardName    string
+	StartedAt    string
+	Angle        int16
+	ClimbedCount int
+}
+
+// HistoryListModel backs the read-only past-sessions list page.
+type HistoryListModel struct {
+	Sessions []HistorySessionRow
+}
+
+// HistoryProblemRow is one climbed problem in a past session's detail view
+// (FR-014).
+type HistoryProblemRow struct {
+	Seq        int
+	Name       string
+	Grade      string
+	Completion string
+	RPE        int16
+}
+
+// HistoryDetailModel backs the read-only past-session detail page.
+type HistoryDetailModel struct {
+	SessionID string
+	BoardName string
+	StartedAt string
+	Angle     int16
+	Problems  []HistoryProblemRow
+}
+
+// HistoryProblemModel backs the read-only problem card reached from a past
+// session's detail view — the live session card stripped to its read-only
+// parts (no result form, no End button).
+type HistoryProblemModel struct {
+	SessionID  string
+	Seq        int
+	RPE        int16
+	Completion string
+	Problem    catalog.ProblemView
+}
+
 // OnboardingModel carries the catalog-derived dropdown options and
 // per-request state for the onboarding form.
 type OnboardingModel struct {
