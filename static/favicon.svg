@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="moon" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#A9B8E8"/>
+      <stop offset="1" stop-color="#2E4B8F"/>
+    </linearGradient>
+    <mask id="crescent">
+      <rect width="32" height="32" fill="#fff"/>
+      <circle cx="21" cy="13" r="12" fill="#000"/>
+    </mask>
+  </defs>
+  <circle cx="16" cy="16" r="13" fill="url(#moon)" mask="url(#crescent)"/>
+</svg>

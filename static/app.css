@@ -1,56 +1,510 @@
-:root {
-	--fg: #1a1a1a;
-	--muted: #666;
-	--accent: #2f6f4f;
-	--bg: #fafafa;
+/* ==========================================================================
+   MoonPhase — "chalk by day, moonlit by night"
+   Light theme = a birch-ply board in daylight. Dark theme = a night session.
+   Same identity at two times of day, not a palette and its inversion.
+
+   Layer 1 — tokens
+   Layer 2 — reset + base elements
+   Layer 3 — shared components
+   Layer 4 — screen rules (progressively replaced as each screen's phase lands)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Layer 1 — tokens
+   -------------------------------------------------------------------------- */
+
+@font-face {
+	font-family: "Fraunces";
+	src: url("/static/fonts/fraunces-latin.woff2") format("woff2");
+	font-weight: 400 600;
+	font-display: swap;
 }
 
-* {
+@font-face {
+	font-family: "Instrument Sans";
+	src: url("/static/fonts/instrument-sans-latin.woff2") format("woff2");
+	font-weight: 400 600;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "IBM Plex Mono";
+	src: url("/static/fonts/ibm-plex-mono-latin.woff2") format("woff2");
+	font-weight: 400;
+	font-display: swap;
+}
+
+:root {
+	/* colour — light (the board in daylight) */
+	--ground: #e9dcc3;
+	--surface: #f5eee0;
+	--ink: #241c14;
+	--ink-soft: #6b5d49;
+	--accent: #2e4b8f;
+	--accent-ink: #f5eee0;
+	--edge: #cbb88f;
+
+	--sent: #1f6f43;
+	--failed: #a8321f;
+	--bailed: #7a5a12;
+
+	/* hold-overlay roles */
+	--hold-start: #1f6f43;
+	--hold-finish: #7b2f8f;
+	--hold-hand: var(--accent);
+	--hold-foot: var(--ink-soft);
+
+	/* space — 4 8 12 16 24 32 48 64 */
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 0.75rem;
+	--space-4: 1rem;
+	--space-5: 1.5rem;
+	--space-6: 2rem;
+	--space-7: 3rem;
+	--space-8: 4rem;
+
+	--r-sm: 6px;
+	--r-md: 12px;
+	--r-full: 999px;
+
+	--shadow-1: 0 -2px 16px rgba(20, 26, 42, 0.14);
+
+	/* type — ~1.2 ratio */
+	--step--1: 0.833rem;
+	--step-0: 1rem;
+	--step-1: 1.2rem;
+	--step-2: 1.44rem;
+	--step-3: 1.728rem;
+	--step-4: 2.074rem;
+
+	--font-display: "Fraunces", Georgia, "Times New Roman", serif;
+	--font-body: "Instrument Sans", system-ui, -apple-system, sans-serif;
+	--font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		/* colour — dark (a night session) */
+		--ground: #141a2a;
+		--surface: #1d2436;
+		--ink: #ece6d8;
+		--ink-soft: #9aa0b4;
+		--accent: #a9b8e8;
+		--accent-ink: #141a2a;
+		--edge: #333b52;
+
+		--sent: #63c090;
+		--failed: #ef9aa6;
+		--bailed: #e0bd63;
+
+		--hold-start: #63c090;
+		--hold-finish: #cf9de0;
+		--hold-hand: var(--accent);
+		--hold-foot: var(--ink-soft);
+	}
+}
+
+/* --------------------------------------------------------------------------
+   Layer 2 — reset + base elements
+   -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
 	box-sizing: border-box;
+}
+
+html {
+	-webkit-text-size-adjust: 100%;
 }
 
 body {
 	margin: 0;
-	padding: 1.5rem 1rem;
-	font: 16px/1.5 system-ui, -apple-system, sans-serif;
-	color: var(--fg);
-	background: var(--bg);
+	min-height: 100dvh;
+	display: flex;
+	flex-direction: column;
+	background: var(--ground);
+	color: var(--ink);
+	font: var(--step-0) / 1.6 var(--font-body);
 }
 
-.hub {
-	max-width: 28rem;
-	margin: 0 auto;
-	text-align: center;
-}
-
-.hub__context {
-	color: var(--muted);
-	font-size: 1.1rem;
-}
-
-.hub__start {
-	display: block;
+#main {
+	flex: 1 1 auto;
+	min-height: 0;
 	width: 100%;
-	padding: 1rem;
-	margin: 1.5rem 0;
-	font-size: 1.25rem;
-	color: #fff;
+	max-width: 30rem;
+	margin: 0 auto;
+	padding: var(--space-5) var(--space-4) var(--space-8);
+}
+
+h1,
+h2,
+h3 {
+	font-family: var(--font-display);
+	font-weight: 600;
+	line-height: 1.15;
+	letter-spacing: -0.01em;
+	margin: 0 0 var(--space-4);
+}
+
+h1 {
+	font-size: var(--step-4);
+}
+
+h2 {
+	font-size: var(--step-2);
+}
+
+h3 {
+	font-size: var(--step-1);
+}
+
+p {
+	margin: 0 0 var(--space-4);
+}
+
+a {
+	color: var(--accent);
+	text-underline-offset: 0.15em;
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+	border-radius: var(--r-sm);
+}
+
+::selection {
 	background: var(--accent);
-	border: none;
-	border-radius: 0.5rem;
+	color: var(--accent-ink);
+}
+
+.skip-link {
+	position: absolute;
+	left: var(--space-3);
+	top: var(--space-3);
+	padding: var(--space-2) var(--space-3);
+	background: var(--accent);
+	color: var(--accent-ink);
+	border-radius: var(--r-sm);
+	transform: translateY(-150%);
+	transition: transform 120ms ease;
+	z-index: 10;
+}
+
+.skip-link:focus {
+	transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+/* --------------------------------------------------------------------------
+   Layer 3 — shared components
+   -------------------------------------------------------------------------- */
+
+.btn,
+button[type="submit"] {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
+	padding: 0 var(--space-5);
+	font: 600 var(--step-0) / 1 var(--font-body);
+	color: var(--accent-ink);
+	background: var(--accent);
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
 	cursor: pointer;
 }
 
-/* Board-image hold overlay (Phase 5). */
+.btn.btn--secondary,
+button.btn--secondary[type="submit"] {
+	color: var(--accent);
+	background: transparent;
+	border-color: var(--edge);
+}
+
+.btn--full {
+	display: flex;
+	width: 100%;
+}
+
+button:disabled,
+.btn:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+label {
+	display: block;
+	margin-bottom: var(--space-4);
+	font-weight: 500;
+}
+
+input,
+select,
+textarea {
+	width: 100%;
+	min-height: 44px;
+	margin-top: var(--space-1);
+	padding: 0 var(--space-3);
+	font: var(--step-0) var(--font-body);
+	color: var(--ink);
+	background: var(--surface);
+	border: 1px solid var(--edge);
+	border-radius: var(--r-sm);
+}
+
+textarea {
+	padding: var(--space-3);
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+	width: auto;
+	min-height: 0;
+	margin-top: 0;
+}
+
+.card {
+	background: var(--surface);
+	border: 1px solid var(--edge);
+	border-radius: var(--r-md);
+	padding: var(--space-5);
+}
+
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+	padding: var(--space-1) var(--space-3);
+	font-size: var(--step--1);
+	line-height: 1.4;
+	color: var(--ink-soft);
+	background: var(--ground);
+	border: 1px solid var(--edge);
+	border-radius: var(--r-full);
+}
+
+.chip--mono {
+	font-family: var(--font-mono);
+}
+
+.field-error {
+	margin: 0 0 var(--space-4);
+	color: var(--failed);
+	font-weight: 500;
+}
+
+/* Interaction states — in-flight, focus-within, disabled. */
+.htmx-request,
+.htmx-request button {
+	opacity: 0.6;
+	cursor: progress;
+}
+
+.htmx-request {
+	pointer-events: none;
+}
+
+/* Tap-card labels wrap a real radio — surface its keyboard focus on the card. */
+label:has(input:focus-visible) {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+	border-radius: var(--r-sm);
+}
+
+.appbar {
+	flex: 0 0 auto;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2) var(--space-4);
+	width: 100%;
+	max-width: 30rem;
+	margin: 0 auto;
+	padding: var(--space-3) var(--space-4);
+	border-bottom: 1px solid var(--edge);
+}
+
+.wordmark {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	font: 600 var(--step-1) / 1 var(--font-display);
+	color: var(--ink);
+	text-decoration: none;
+	letter-spacing: -0.01em;
+}
+
+.wordmark__mark {
+	width: 1.05em;
+	height: 1.05em;
+	flex: 0 0 auto;
+}
+
+.appbar__context {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+	margin-left: auto;
+}
+
+/* --------------------------------------------------------------------------
+   Layer 4 — screen rules (transitional; replaced per phase)
+   -------------------------------------------------------------------------- */
+
+/* Auth + onboarding — a single centred card with room to breathe. */
+.authcard {
+	margin-top: var(--space-6);
+}
+
+.authcard h1 {
+	margin-bottom: var(--space-2);
+}
+
+.authcard__help {
+	margin-bottom: var(--space-5);
+	color: var(--ink-soft);
+}
+
+.authcard form {
+	margin-bottom: 0;
+}
+
+.authcard__alt {
+	margin: var(--space-5) 0 0;
+	font-size: var(--step--1);
+	color: var(--ink-soft);
+}
+
+/* Hub — lean: one primary action, secondary links. */
+.hub {
+	margin-top: var(--space-5);
+}
+
+.hub h1 {
+	margin-bottom: var(--space-5);
+}
+
+.hub__links {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+	margin-top: var(--space-5);
+}
+
+.hub__link {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	padding: var(--space-4);
+	color: var(--ink);
+	text-decoration: none;
+	font-weight: 500;
+}
+
+.hub__link-icon {
+	flex: 0 0 auto;
+	width: 1.4rem;
+	height: 1.4rem;
+	color: var(--ink-soft);
+}
+
+/* Profile — the edit card plus a low-emphasis sign-out. */
+.profile {
+	margin-top: var(--space-5);
+}
+
+.profile .signout {
+	margin: var(--space-6) 0 0;
+	padding-top: var(--space-5);
+	border-top: 1px solid var(--edge);
+}
+
+/* --- Session screen ----------------------------------------------------- */
+
+/* The live card fills the space under the header and splits into a scrolling
+   problem area and a pinned action zone, so the result controls and End stay
+   under the thumb however tall the board photo and hold list run. */
+/* Pin the live session to exactly one viewport so the scroll happens inside
+   the card, not the page — the action zone must never leave the screen. */
+body:has(#session-card) {
+	height: 100dvh;
+	overflow: hidden;
+}
+
+#main:has(#session-card) {
+	display: flex;
+	max-width: none;
+	padding: 0;
+}
+
+#session-card {
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	max-width: 30rem;
+	margin: 0 auto;
+}
+
+.session__scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	padding: var(--space-4) var(--space-4) var(--space-5);
+}
+
+.session__scroll h1 {
+	margin-bottom: var(--space-3);
+}
+
+.session__actions {
+	flex: 0 0 auto;
+	padding: var(--space-3) var(--space-4) var(--space-4);
+	background: var(--surface);
+	border-top: 1px solid var(--edge);
+	box-shadow: var(--shadow-1);
+}
+
+/* One settle on the incoming card after a rating — the payoff moment.
+   Suppressed by the global reduced-motion guard in Layer 2. */
+@keyframes card-settle {
+	from {
+		opacity: 0.3;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+#session-card.htmx-added,
+#session-card.htmx-settling {
+	animation: card-settle 180ms ease-out;
+}
+
+/* Board-image hold overlay. */
 .board {
 	position: relative;
-	max-width: 600px;
-	margin: 0 auto;
+	margin: 0 auto var(--space-4);
 }
 
 .board__img {
 	width: 100%;
 	display: block;
+	border-radius: var(--r-md);
 }
 
 .hold {
@@ -58,60 +512,145 @@ body {
 	width: 7%;
 	aspect-ratio: 1;
 	border: 3px solid;
-	border-radius: 50%;
+	border-radius: var(--r-full);
 	transform: translate(-50%, -50%);
-	box-sizing: border-box;
 }
 
 .hold--start {
-	border-color: #2ecc40;
+	border-color: var(--hold-start);
 }
 
 .hold--finish {
-	border-color: #b10dc9;
+	border-color: var(--hold-finish);
 }
 
 .hold--hand {
-	border-color: #0074d9;
+	border-color: var(--hold-hand);
 }
 
 .hold--foot {
-	border-color: #aaa;
+	border-color: var(--hold-foot);
 }
 
-/* --- Main Session result form (S-04) --- */
+/* Holds — a compact, scannable coordinate list. */
+.holds {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	border-top: 1px solid var(--edge);
+}
 
+.holds__item {
+	display: flex;
+	align-items: baseline;
+	gap: var(--space-3);
+	padding: var(--space-2) 0;
+	border-bottom: 1px solid var(--edge);
+	font-size: var(--step--1);
+}
+
+.holds__ref {
+	flex: 0 0 3.5ch;
+	font-family: var(--font-mono);
+}
+
+.holds__type {
+	flex: 1;
+}
+
+.holds__role {
+	flex: 0 0 auto;
+	color: var(--ink-soft);
+}
+
+/* Result form — completion tap-cards + the RPE effort ramp. */
 .result {
-	margin-top: 1rem;
+	margin: 0;
 }
 
 .result__status {
 	border: 0;
 	padding: 0;
-	margin: 0 0 1rem;
-	display: grid;
-	gap: 0.5rem;
+	margin: 0;
 }
 
 .result__status legend {
+	padding: 0;
+	margin-bottom: var(--space-2);
 	font-weight: 600;
-	margin-bottom: 0.5rem;
 }
 
-.result__status label {
-	display: block;
-	padding: 1rem;
-	font-size: 1.15rem;
-	border: 2px solid #ccc;
-	border-radius: 8px;
+.result__status-row {
+	display: flex;
+	gap: var(--space-2);
+}
+
+.result__status-row label {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+	min-height: 44px;
+	margin: 0;
+	padding: var(--space-2);
+	font-size: var(--step--1);
+	font-weight: 500;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
 	cursor: pointer;
 }
 
-.result__status label:has(input:checked) {
-	border-color: #0074d9;
-	background: #eaf4fd;
+/* Sent / Failed / Bailed carry a constant green / red / yellow tint; the
+   chosen one deepens, takes a solid coloured border, and goes bold. */
+.result__opt--sent {
+	background: color-mix(in srgb, var(--sent) 14%, var(--surface));
+	border-color: color-mix(in srgb, var(--sent) 32%, var(--edge));
 }
 
+.result__opt--failed {
+	background: color-mix(in srgb, var(--failed) 14%, var(--surface));
+	border-color: color-mix(in srgb, var(--failed) 32%, var(--edge));
+}
+
+.result__opt--bailed {
+	background: color-mix(in srgb, var(--bailed) 14%, var(--surface));
+	border-color: color-mix(in srgb, var(--bailed) 32%, var(--edge));
+}
+
+.result__opt--sent:has(input:checked) {
+	background: color-mix(in srgb, var(--sent) 28%, var(--surface));
+	border-color: var(--sent);
+	font-weight: 600;
+}
+
+.result__opt--failed:has(input:checked) {
+	background: color-mix(in srgb, var(--failed) 28%, var(--surface));
+	border-color: var(--failed);
+	font-weight: 600;
+}
+
+.result__opt--bailed:has(input:checked) {
+	background: color-mix(in srgb, var(--bailed) 28%, var(--surface));
+	border-color: var(--bailed);
+	font-weight: 600;
+}
+
+.result__opt--sent input {
+	accent-color: var(--sent);
+}
+
+.result__opt--failed input {
+	accent-color: var(--failed);
+}
+
+.result__opt--bailed input {
+	accent-color: var(--bailed);
+}
+
+/* RPE 1–10: a calm, uniform grid. Each button pairs its digit with an effort
+   face that goes from relaxed to straining. Hidden until a completion status
+   is chosen. */
 .result__rpe {
 	display: none;
 }
@@ -119,24 +658,136 @@ body {
 .result__status:has(input:checked) ~ .result__rpe {
 	display: grid;
 	grid-template-columns: repeat(5, 1fr);
-	gap: 0.5rem;
+	gap: var(--space-2);
+	margin-top: var(--space-3);
 }
 
 .result__rpe button {
-	padding: 1rem 0;
-	font-size: 1.25rem;
-	border: 2px solid #ccc;
-	border-radius: 8px;
-	background: #fff;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	min-height: 48px;
+	padding: var(--space-2) 0;
+	font: 600 var(--step--1) / 1 var(--font-mono);
+	color: var(--ink);
+	background: var(--surface);
+	border: 1px solid var(--edge);
+	border-radius: var(--r-sm);
 	cursor: pointer;
 }
 
-.session__end {
-	margin-top: 1.5rem;
+.rpe__face {
+	width: 1.15rem;
+	height: 1.15rem;
+	color: var(--ink-soft);
 }
 
-.session__end button {
-	width: 100%;
-	padding: 0.9rem;
-	font-size: 1.05rem;
+.session__end {
+	margin-top: var(--space-3);
+}
+
+/* Full-screen notice (unsupported board). */
+.notice {
+	margin-top: var(--space-6);
+}
+
+/* --- Shared chip row --------------------------------------------------- */
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+	margin: 0 0 var(--space-4);
+}
+
+.chip--sent {
+	color: var(--sent);
+	border-color: color-mix(in srgb, var(--sent) 45%, var(--edge));
+}
+
+.chip--failed {
+	color: var(--failed);
+	border-color: color-mix(in srgb, var(--failed) 45%, var(--edge));
+}
+
+.chip--bailed {
+	color: var(--bailed);
+	border-color: color-mix(in srgb, var(--bailed) 45%, var(--edge));
+}
+
+/* --- History --------------------------------------------------------- */
+.history {
+	margin-top: var(--space-5);
+}
+
+.history-empty {
+	margin-top: var(--space-5);
+	color: var(--ink-soft);
+}
+
+.history-cards {
+	list-style: none;
+	margin: var(--space-4) 0 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.histrow,
+.histitem {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	color: var(--ink);
+	text-decoration: none;
+}
+
+.histrow__date,
+.histitem__name {
+	font-weight: 600;
+}
+
+.histitem__name {
+	font-family: var(--font-display);
+	font-size: var(--step-1);
+}
+
+.histrow__count {
+	font-size: var(--step--1);
+	color: var(--ink-soft);
+}
+
+.histlist {
+	margin: var(--space-4) 0;
+	padding-left: 1.6rem;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.histlist .chips {
+	margin: 0;
+}
+
+.history__nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2) var(--space-4);
+	margin-top: var(--space-5);
+}
+
+/* --- Read-only problem card ----------------------------------------- */
+.problem {
+	margin-top: var(--space-4);
+}
+
+.problem__result {
+	margin: var(--space-5) 0;
+}
+
+.problem__result-label {
+	margin-bottom: var(--space-2);
+	font-weight: 600;
 }

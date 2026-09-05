@@ -45,7 +45,6 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 	ap := newAuthPages(authClient, secure, logger)
 	op := newOnboardingPages(pool, profileStore, logger)
 	pp := newProfilePages(pool, profileStore, logger)
-	hp := newHubPages(profileStore, logger)
 	sp := newSessionPages(pool, profileStore, sessionStore, rec, logger)
 	hsp := newHistoryPages(pool, sessionStore, logger)
 
@@ -67,7 +66,7 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 		r.Group(func(r chi.Router) {
 			r.Use(OnboardingGate(profileStore))
 
-			r.Get("/", hp.handlePage)
+			r.Get("/", handleHub)
 
 			r.Get("/api/me", handleMe)
 

@@ -1,82 +1,83 @@
 package pages
 
-import (
-	"strconv"
+import "strconv"
 
-	"github.com/sunba23/moonphase/templates/layout"
-)
-
-templ historyListContent(m HistoryListModel) {
-	<main class="hub">
+templ HistoryListContent(m HistoryListModel) {
+	<div class="history">
 		<h1>Past sessions</h1>
 		if len(m.Sessions) == 0 {
-			<p>No sessions yet.</p>
-			<p><a href="/">Start a Main Session</a></p>
+			<div class="history-empty">
+				<p>No sessions yet. Your first session shows up here once you end it.</p>
+				<p><a class="btn btn--secondary" href="/">Start a session</a></p>
+			</div>
 		} else {
-			<ul class="history">
+			<ul class="history-cards">
 				for _, s := range m.Sessions {
 					<li>
-						<a href={ "/sessions/" + s.ID }>
-							{ s.StartedAt } · { s.BoardName } · { strconv.Itoa(int(s.Angle)) }° · { strconv.Itoa(s.ClimbedCount) } problems climbed
+						<a class="card histrow" href={ "/sessions/" + s.ID }>
+							<span class="histrow__date">{ s.StartedAt }</span>
+							<span class="chips">
+								<span class="chip">{ s.BoardName }</span>
+								<span class="chip">{ strconv.Itoa(int(s.Angle)) }°</span>
+							</span>
+							<span class="histrow__count">{ strconv.Itoa(s.ClimbedCount) } problems climbed</span>
 						</a>
 					</li>
 				}
 			</ul>
-			<p><a href="/">Back to hub</a></p>
+			<nav class="history__nav">
+				<a href="/">Back to hub</a>
+			</nav>
 		}
-	</main>
+	</div>
 }
 
-templ HistoryListPage(m HistoryListModel) {
-	@layout.Page("Past sessions", historyListContent(m))
-}
-
-templ historyDetailContent(m HistoryDetailModel) {
-	<main class="hub">
+templ HistoryDetailContent(m HistoryDetailModel) {
+	<div class="history">
 		<h1>Session</h1>
-		<p class="history__meta">
-			{ m.StartedAt } · { m.BoardName } · { strconv.Itoa(int(m.Angle)) }°
+		<p class="chips">
+			<span class="chip">{ m.StartedAt }</span>
+			<span class="chip">{ m.BoardName }</span>
+			<span class="chip">{ strconv.Itoa(int(m.Angle)) }°</span>
 		</p>
 		if len(m.Problems) == 0 {
-			<p>No problems climbed in this session.</p>
+			<p class="history-empty">No problems climbed in this session.</p>
 		} else {
-			<ol class="history">
+			<ol class="histlist">
 				for _, p := range m.Problems {
 					<li>
-						<a href={ "/sessions/" + m.SessionID + "/problem/" + strconv.Itoa(p.Seq) }>
-							{ p.Name } · { p.Grade } · RPE { strconv.Itoa(int(p.RPE)) } · { p.Completion }
+						<a class="card histitem" href={ "/sessions/" + m.SessionID + "/problem/" + strconv.Itoa(p.Seq) }>
+							<span class="histitem__name">{ p.Name }</span>
+							<span class="chips">
+								<span class="chip chip--mono">{ p.Grade }</span>
+								<span class="chip">RPE { strconv.Itoa(int(p.RPE)) }</span>
+								<span class={ "chip", "chip--" + p.Completion }>{ p.Completion }</span>
+							</span>
 						</a>
 					</li>
 				}
 			</ol>
 		}
-		<p><a href="/sessions">Back to past sessions</a></p>
-	</main>
+		<nav class="history__nav">
+			<a href="/sessions">Back to past sessions</a>
+			<a href="/">Back to hub</a>
+		</nav>
+	</div>
 }
 
-templ HistoryDetailPage(m HistoryDetailModel) {
-	@layout.Page("Session", historyDetailContent(m))
-}
-
-templ historyProblemContent(m HistoryProblemModel) {
-	<main class="session">
+templ HistoryProblemContent(m HistoryProblemModel) {
+	<div class="problem">
 		<h1>{ m.Problem.Name }</h1>
-		<p class="session__meta">
-			{ m.Problem.Grade } · { strconv.Itoa(int(m.Problem.Angle)) }° · { m.Problem.BoardYear }
-		</p>
+		@problemMeta(m.Problem)
 		@moonBoardOverlay(m.Problem.BoardYear, m.Problem.Holds)
-		<ul class="holds">
-			for _, h := range m.Problem.Holds {
-				<li>{ h.GridRef } — { holdLabel(h) } <span class="holds__role">({ h.Role })</span></li>
-			}
-		</ul>
-		<p class="history__result">
-			You climbed this — RPE { strconv.Itoa(int(m.RPE)) } · { m.Completion }
-		</p>
+		@holdsList(m.Problem.Holds)
+		<div class="problem__result">
+			<p class="problem__result-label">You climbed this</p>
+			<p class="chips">
+				<span class="chip chip--mono">RPE { strconv.Itoa(int(m.RPE)) }</span>
+				<span class={ "chip", "chip--" + m.Completion }>{ m.Completion }</span>
+			</p>
+		</div>
 		<p><a href={ "/sessions/" + m.SessionID }>Back to session</a></p>
-	</main>
-}
-
-templ HistoryProblemPage(m HistoryProblemModel) {
-	@layout.Page("Problem", historyProblemContent(m))
+	</div>
 }

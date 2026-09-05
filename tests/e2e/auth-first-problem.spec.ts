@@ -70,7 +70,7 @@ test('a new account can sign up, onboard, and get a first problem recommended', 
 
   // Onboarding HX-redirects to the hub. The "Main Session" button being visible
   // is the real signal that the gate let the now-onboarded user through.
-  const startSession = page.getByRole('button', { name: 'Main Session' });
+  const startSession = page.getByRole('button', { name: 'Start session' });
   await expect(startSession).toBeVisible();
 
   // Capture the user id now (via the authenticated API, reusing the browser
@@ -89,6 +89,12 @@ test('a new account can sign up, onboard, and get a first problem recommended', 
   // per-hold breakdown.
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).not.toBeEmpty();
-  await expect(page.getByText(/40°\s*·\s*2016/)).toBeVisible();
+  // The catalog-detail line reflects the board + angle chosen at onboarding,
+  // now rendered as discrete chips rather than a middle-dot string. Scope to
+  // <main> so the board/angle chips in the shared header don't collide.
+  const card = page.getByRole('main');
+  await expect(card.getByTestId('card-grade')).toBeVisible();
+  await expect(card.getByText('40°', { exact: true })).toBeVisible();
+  await expect(card.getByText('2016', { exact: true })).toBeVisible();
   await expect(page.getByRole('listitem').first()).toBeVisible();
 });

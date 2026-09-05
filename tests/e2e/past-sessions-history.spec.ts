@@ -112,7 +112,7 @@ test('a climber reviews a finished session\'s climbed problems from history', as
   await page.getByLabel('Angle').selectOption('40');
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  const startSession = page.getByRole('button', { name: 'Main Session' });
+  const startSession = page.getByRole('button', { name: 'Start session' });
   await expect(startSession).toBeVisible();
 
   const me = await page.request.get('/api/me');
@@ -151,8 +151,9 @@ test('a climber reviews a finished session\'s climbed problems from history', as
   await expect(secondProblemRow).toBeVisible();
   await expect(page.getByText(name0, { exact: false })).toBeVisible();
   await expect(page.getByText(name1, { exact: false })).toBeVisible();
-  await expect(page.getByRole('link', { name: /RPE 4 · sent/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /RPE 8 · failed/i })).toBeVisible();
+  // RPE + completion are discrete chips now, not a middle-dot string.
+  await expect(page.getByRole('link', { name: /RPE 4.*sent/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /RPE 8.*failed/i })).toBeVisible();
 
   // --- Problem card: read-only board layout + recorded result + back-link ---
   await firstProblemRow.click();
@@ -160,7 +161,8 @@ test('a climber reviews a finished session\'s climbed problems from history', as
 
   await expect(page.getByRole('img', { name: /moonboard/i })).toBeVisible();
   await expect(page.getByText(/you climbed this/i)).toBeVisible();
-  await expect(page.getByText(/RPE 4 · sent/i)).toBeVisible();
+  await expect(page.getByText('RPE 4')).toBeVisible();
+  await expect(page.getByText('sent', { exact: true })).toBeVisible();
   // Read-only: the live result form and End button are gone.
   await expect(page.getByRole('button', { name: 'End session' })).toHaveCount(0);
 
@@ -182,7 +184,7 @@ test('a freshly onboarded climber with no finished sessions sees the empty state
   await page.getByLabel('Angle').selectOption('40');
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  await expect(page.getByRole('button', { name: 'Main Session' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start session' })).toBeVisible();
 
   const me = await page.request.get('/api/me');
   expect(me.ok()).toBeTruthy();
@@ -193,5 +195,5 @@ test('a freshly onboarded climber with no finished sessions sees the empty state
   await page.waitForURL((url) => new URL(url).pathname === '/sessions');
 
   await expect(page.getByText(/no sessions yet/i)).toBeVisible();
-  await expect(page.getByRole('link', { name: /start a main session/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /start a session/i })).toBeVisible();
 });

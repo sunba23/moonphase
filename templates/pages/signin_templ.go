@@ -31,19 +31,19 @@ func signinForm(model AuthFormModel) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<form id=\"authForm\" hx-post=\"/signin\" hx-select=\"#authForm\" hx-swap=\"outerHTML\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"authcard card\"><h1>Sign in</h1><p class=\"authcard__help\">Pick up where your training left off.</p><form id=\"authForm\" hx-post=\"/signin\" hx-select=\"#authForm\" hx-swap=\"outerHTML\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if model.Error != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<p class=\"error\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<p class=\"field-error\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var2 string
 			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(model.Error)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/pages/signin.templ`, Line: 8, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/pages/signin.templ`, Line: 11, Col: 40}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 			if templ_7745c5c3_Err != nil {
@@ -54,7 +54,7 @@ func signinForm(model AuthFormModel) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<label>Email <input type=\"email\" name=\"email\" required></label> <label>Password <input type=\"password\" name=\"password\" required></label> <button type=\"submit\">Sign in</button></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<label>Email <input type=\"email\" name=\"email\" required></label> <label>Password <input type=\"password\" name=\"password\" required></label> <button type=\"submit\" class=\"btn btn--full\">Sign in</button></form><p class=\"authcard__alt\">New to MoonPhase? <a href=\"/signup\">Create an account</a></p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

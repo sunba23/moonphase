@@ -40,6 +40,29 @@ templ moonBoardOverlay(year string, holds []catalog.HoldPlacement) {
 	</div>
 }
 
+// problemMeta renders the grade / angle / board-year chips shown under a
+// problem name. The grade chip carries a test hook — three plain-text chips
+// are ambiguous to a role/label locator.
+templ problemMeta(p catalog.ProblemView) {
+	<p class="chips">
+		<span class="chip chip--mono" data-testid="card-grade">{ p.Grade }</span>
+		<span class="chip">{ strconv.Itoa(int(p.Angle)) }°</span>
+		<span class="chip">{ p.BoardYear }</span>
+	</p>
+}
+
+templ holdsList(holds []catalog.HoldPlacement) {
+	<ul class="holds">
+		for _, h := range holds {
+			<li class="holds__item">
+				<span class="holds__ref">{ h.GridRef }</span>
+				<span class="holds__type">{ holdLabel(h) }</span>
+				<span class="holds__role">{ h.Role }</span>
+			</li>
+		}
+	</ul>
+}
+
 templ resultForm(sessionID string, seq int) {
 	<form
 		class="result"
@@ -50,34 +73,59 @@ templ resultForm(sessionID string, seq int) {
 		<input type="hidden" name="seq" value={ strconv.Itoa(seq) }/>
 		<fieldset class="result__status">
 			<legend>How did it go?</legend>
-			<label><input type="radio" name="completion" value="sent" required/> Sent</label>
-			<label><input type="radio" name="completion" value="failed" required/> Failed</label>
-			<label><input type="radio" name="completion" value="bailed" required/> Bailed</label>
+			<div class="result__status-row">
+				<label class="result__opt result__opt--sent"><input type="radio" name="completion" value="sent" required/> Sent</label>
+				<label class="result__opt result__opt--failed"><input type="radio" name="completion" value="failed" required/> Failed</label>
+				<label class="result__opt result__opt--bailed"><input type="radio" name="completion" value="bailed" required/> Bailed</label>
+			</div>
 		</fieldset>
-		<div class="result__rpe">
+		<div class="result__rpe" role="group" aria-label="Rate the effort, 1 to 10">
 			for n := 1; n <= 10; n++ {
-				<button type="submit" name="rpe" value={ strconv.Itoa(n) }>{ strconv.Itoa(n) }</button>
+				<button type="submit" name="rpe" value={ strconv.Itoa(n) }>
+					@rpeFace(n)
+					<span class="rpe__num">{ strconv.Itoa(n) }</span>
+				</button>
 			}
 		</div>
 	</form>
 }
 
+// rpeFace draws a simple effort face for an RPE value — relaxed at the low
+// end, straining at the top. Decorative only (aria-hidden); the button's
+// accessible name stays the bare digit.
+templ rpeFace(n int) {
+	<svg class="rpe__face" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+		<circle cx="12" cy="12" r="9"></circle>
+		<circle cx="9" cy="10" r="0.7" fill="currentColor" stroke="none"></circle>
+		<circle cx="15" cy="10" r="0.7" fill="currentColor" stroke="none"></circle>
+		switch {
+			case n <= 3:
+				<path d="M8.5 14.3c1 1.2 2.1 1.8 3.5 1.8s2.5-.6 3.5-1.8" stroke-linecap="round"></path>
+			case n <= 6:
+				<path d="M8.5 15h7" stroke-linecap="round"></path>
+			case n <= 8:
+				<path d="M8.5 15.9c1-1 2.1-1.5 3.5-1.5s2.5.5 3.5 1.5" stroke-linecap="round"></path>
+			default:
+				<path d="M8.2 16.2c1-1.5 2.3-2.2 3.8-2.2s2.8.7 3.8 2.2" stroke-linecap="round"></path>
+				<path d="M7.6 8.2l2.2 1.1M16.4 8.2l-2.2 1.1" stroke-linecap="round"></path>
+		}
+	</svg>
+}
+
 templ SessionCard(m SessionCardModel) {
-	<div id="session-card" class="session">
-		<h1>{ m.Problem.Name }</h1>
-		<p class="session__meta">
-			{ m.Problem.Grade } · { strconv.Itoa(int(m.Problem.Angle)) }° · { m.Problem.BoardYear }
-		</p>
-		@moonBoardOverlay(m.Problem.BoardYear, m.Problem.Holds)
-		<ul class="holds">
-			for _, h := range m.Problem.Holds {
-				<li>{ h.GridRef } — { holdLabel(h) } <span class="holds__role">({ h.Role })</span></li>
-			}
-		</ul>
-		@resultForm(m.SessionID, m.Seq)
-		<form class="session__end" hx-post={ "/session/" + m.SessionID + "/end" } hx-swap="none">
-			<button type="submit">End session</button>
-		</form>
+	<div id="session-card" class="session session--live">
+		<div class="session__scroll">
+			<h1>{ m.Problem.Name }</h1>
+			@problemMeta(m.Problem)
+			@moonBoardOverlay(m.Problem.BoardYear, m.Problem.Holds)
+			@holdsList(m.Problem.Holds)
+		</div>
+		<div class="session__actions">
+			@resultForm(m.SessionID, m.Seq)
+			<form class="session__end" hx-post={ "/session/" + m.SessionID + "/end" } hx-swap="none">
+				<button type="submit" class="btn btn--secondary btn--full">End session</button>
+			</form>
+		</div>
 	</div>
 }
 
@@ -85,17 +133,17 @@ templ SessionPage(m SessionModel) {
 	@layout.Page("Session", SessionCard(m.Card))
 }
 
-templ unsupportedBoardContent(m UnsupportedBoardModel) {
-	<main class="hub">
+templ UnsupportedBoardContent(m UnsupportedBoardModel) {
+	<div class="notice">
 		<h1>Switch your board</h1>
 		<p>
 			Your profile is set to { m.BoardName }, which MoonPhase can't run a session on
 			yet. Choose 2016 or 2024 in your profile to start a session.
 		</p>
-		<p><a href="/profile">Go to Profile</a></p>
-	</main>
+		<p><a class="btn btn--secondary" href="/profile">Go to Profile</a></p>
+	</div>
 }
 
 templ UnsupportedBoardPage(m UnsupportedBoardModel) {
-	@layout.Page("Switch your board", unsupportedBoardContent(m))
+	@layout.Page("Switch your board", UnsupportedBoardContent(m))
 }

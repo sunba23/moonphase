@@ -69,7 +69,7 @@ func (p *profilePages) handlePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	renderPage(w, r, pages.ProfilePage(model), http.StatusOK)
+	renderAppPage(w, r, "Profile", pages.ProfileForm(model), http.StatusOK)
 }
 
 func (p *profilePages) handleSubmit(w http.ResponseWriter, r *http.Request) {
@@ -102,21 +102,21 @@ func (p *profilePages) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	maxGrade := r.FormValue("max_grade")
 	if !gradeValid(model.Grades, maxGrade) {
 		model.Error = "Invalid max grade"
-		renderPage(w, r, pages.ProfilePage(model), http.StatusUnprocessableEntity)
+		renderAppPage(w, r, "Profile", pages.ProfileForm(model), http.StatusUnprocessableEntity)
 		return
 	}
 
 	holdsetup, err := strconv.ParseInt(r.FormValue("holdsetup"), 10, 16)
 	if err != nil || !boardValid(model.Boards, int16(holdsetup)) {
 		model.Error = "Invalid board"
-		renderPage(w, r, pages.ProfilePage(model), http.StatusUnprocessableEntity)
+		renderAppPage(w, r, "Profile", pages.ProfileForm(model), http.StatusUnprocessableEntity)
 		return
 	}
 
 	angle, err := strconv.ParseInt(r.FormValue("angle"), 10, 16)
 	if err != nil || !angleValid(model.Angles, int16(angle)) {
 		model.Error = "Invalid angle"
-		renderPage(w, r, pages.ProfilePage(model), http.StatusUnprocessableEntity)
+		renderAppPage(w, r, "Profile", pages.ProfileForm(model), http.StatusUnprocessableEntity)
 		return
 	}
 

@@ -29,7 +29,8 @@ func OnboardingGate(pc ProfileChecker) func(http.Handler) http.Handler {
 				return
 			}
 
-			if _, err := pc.Get(r.Context(), userID); err != nil {
+			prof, err := pc.Get(r.Context(), userID)
+			if err != nil {
 				if errors.Is(err, profile.ErrNotFound) {
 					http.Redirect(w, r, "/onboarding", http.StatusFound)
 					return
@@ -38,7 +39,9 @@ func OnboardingGate(pc ProfileChecker) func(http.Handler) http.Handler {
 				return
 			}
 
-			next.ServeHTTP(w, r)
+			// Carry the loaded profile down so renderAppPage can build the
+			// shared header without re-querying.
+			next.ServeHTTP(w, r.WithContext(withProfile(r.Context(), prof)))
 		})
 	}
 }
