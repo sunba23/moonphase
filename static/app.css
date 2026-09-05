@@ -711,13 +711,98 @@ body:has(#session-card) {
 	display: inline-flex;
 }
 
-/* History (restyled in Phase 5). */
-.session__meta,
-.history__meta {
+/* --- Shared chip row --------------------------------------------------- */
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+	margin: 0 0 var(--space-4);
+}
+
+.session__meta {
+	margin-bottom: var(--space-4);
+}
+
+.chip--sent {
+	color: var(--sent);
+	border-color: color-mix(in srgb, var(--sent) 45%, var(--edge));
+}
+
+.chip--failed {
+	color: var(--failed);
+	border-color: color-mix(in srgb, var(--failed) 45%, var(--edge));
+}
+
+.chip--bailed {
+	color: var(--bailed);
+	border-color: color-mix(in srgb, var(--bailed) 45%, var(--edge));
+}
+
+/* --- History --------------------------------------------------------- */
+.history {
+	margin-top: var(--space-5);
+}
+
+.history-empty {
+	margin-top: var(--space-5);
 	color: var(--ink-soft);
 }
 
-.history a {
-	display: block;
-	padding: var(--space-2) 0;
+.history-cards {
+	list-style: none;
+	margin: var(--space-4) 0 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.histrow,
+.histitem {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	color: var(--ink);
+	text-decoration: none;
+}
+
+.histrow__date,
+.histitem__name {
+	font-weight: 600;
+}
+
+.histitem__name {
+	font-family: var(--font-display);
+	font-size: var(--step-1);
+}
+
+.histrow__count {
+	font-size: var(--step--1);
+	color: var(--ink-soft);
+}
+
+.histlist {
+	margin: var(--space-4) 0;
+	padding-left: 1.6rem;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.histlist .chips {
+	margin: 0;
+}
+
+/* --- Read-only problem card ----------------------------------------- */
+.problem {
+	margin-top: var(--space-4);
+}
+
+.problem__result {
+	margin: var(--space-5) 0;
+}
+
+.problem__result-label {
+	margin-bottom: var(--space-2);
+	font-weight: 600;
 }
