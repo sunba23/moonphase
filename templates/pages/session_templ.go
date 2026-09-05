@@ -365,7 +365,7 @@ func resultForm(sessionID string, seq int) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\"><fieldset class=\"result__status\"><legend>How did it go?</legend><div class=\"result__status-row\"><label><input type=\"radio\" name=\"completion\" value=\"sent\" required> Sent</label> <label><input type=\"radio\" name=\"completion\" value=\"failed\" required> Failed</label> <label><input type=\"radio\" name=\"completion\" value=\"bailed\" required> Bailed</label></div></fieldset><div class=\"result__rpe\" role=\"group\" aria-label=\"Rate the effort, 1 to 10\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\"><fieldset class=\"result__status\"><legend>How did it go?</legend><div class=\"result__status-row\"><label class=\"result__opt result__opt--sent\"><input type=\"radio\" name=\"completion\" value=\"sent\" required> Sent</label> <label class=\"result__opt result__opt--failed\"><input type=\"radio\" name=\"completion\" value=\"failed\" required> Failed</label> <label class=\"result__opt result__opt--bailed\"><input type=\"radio\" name=\"completion\" value=\"bailed\" required> Bailed</label></div></fieldset><div class=\"result__rpe\" role=\"group\" aria-label=\"Rate the effort, 1 to 10\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

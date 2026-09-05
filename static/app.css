@@ -570,19 +570,56 @@ body:has(#session-card) {
 	padding: var(--space-2);
 	font-size: var(--step--1);
 	font-weight: 500;
-	border: 1px solid var(--edge);
+	border: 1px solid transparent;
 	border-radius: var(--r-sm);
 	cursor: pointer;
 }
 
-.result__status-row label:has(input:checked) {
-	border-color: var(--accent);
-	background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+/* Sent / Failed / Bailed carry a constant green / red / yellow tint; the
+   chosen one deepens, takes a solid coloured border, and goes bold. */
+.result__opt--sent {
+	background: color-mix(in srgb, var(--sent) 14%, var(--surface));
+	border-color: color-mix(in srgb, var(--sent) 32%, var(--edge));
+}
+
+.result__opt--failed {
+	background: color-mix(in srgb, var(--failed) 14%, var(--surface));
+	border-color: color-mix(in srgb, var(--failed) 32%, var(--edge));
+}
+
+.result__opt--bailed {
+	background: color-mix(in srgb, var(--bailed) 14%, var(--surface));
+	border-color: color-mix(in srgb, var(--bailed) 32%, var(--edge));
+}
+
+.result__opt--sent:has(input:checked) {
+	background: color-mix(in srgb, var(--sent) 28%, var(--surface));
+	border-color: var(--sent);
 	font-weight: 600;
 }
 
-.result__status-row input {
-	accent-color: var(--accent);
+.result__opt--failed:has(input:checked) {
+	background: color-mix(in srgb, var(--failed) 28%, var(--surface));
+	border-color: var(--failed);
+	font-weight: 600;
+}
+
+.result__opt--bailed:has(input:checked) {
+	background: color-mix(in srgb, var(--bailed) 28%, var(--surface));
+	border-color: var(--bailed);
+	font-weight: 600;
+}
+
+.result__opt--sent input {
+	accent-color: var(--sent);
+}
+
+.result__opt--failed input {
+	accent-color: var(--failed);
+}
+
+.result__opt--bailed input {
+	accent-color: var(--bailed);
 }
 
 /* The ramp: 10 segments, rising height + fill left to right — it should read
