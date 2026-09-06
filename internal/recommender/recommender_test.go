@@ -92,7 +92,7 @@ func TestFirstPick_PicksLowestSeededGrade(t *testing.T) {
 	seedGradedProblem(ctx, t, pool, 2, "6B")
 	seedGradedProblem(ctx, t, pool, 3, "7A")
 
-	pick, err := New(pool).FirstPick(ctx, 1, 40)
+	pick, _, err := New(pool).FirstPick(ctx, 1, 40)
 	if err != nil {
 		t.Fatalf("FirstPick: %v", err)
 	}
