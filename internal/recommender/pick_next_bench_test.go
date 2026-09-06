@@ -87,7 +87,7 @@ func BenchmarkFirstPick(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := rec.FirstPick(ctx, 1, 40); err != nil {
+		if _, _, err := rec.FirstPick(ctx, 1, 40); err != nil {
 			b.Fatalf("FirstPick: %v", err)
 		}
 	}

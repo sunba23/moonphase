@@ -147,9 +147,12 @@ func TestFirstPickExcluding(t *testing.T) {
 
 	rec := New(pool)
 	for i := 0; i < 20; i++ {
-		pick, err := rec.FirstPickExcluding(ctx, 1, 40, []int64{a, b})
+		pick, poolSize, err := rec.FirstPickExcluding(ctx, 1, 40, []int64{a, b})
 		if err != nil {
 			t.Fatalf("iter %d: FirstPickExcluding: %v", i, err)
+		}
+		if poolSize != 1 {
+			t.Fatalf("iter %d: poolSize = %d, want 1 (only one non-excluded problem)", i, poolSize)
 		}
 		if pick.ProblemID != c {
 			t.Fatalf("iter %d: picked %d, want the only non-excluded problem %d", i, pick.ProblemID, c)
