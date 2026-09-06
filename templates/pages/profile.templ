@@ -38,5 +38,13 @@ templ ProfileForm(model ProfileModel) {
 		<form class="signout" hx-post="/signout" hx-swap="none">
 			<button type="submit" class="btn btn--secondary btn--full">Sign out</button>
 		</form>
+		<form
+			class="delete-account"
+			hx-post="/account/delete"
+			hx-swap="none"
+			hx-confirm="This permanently deletes your account, every session, and every rating. This cannot be undone. Continue?"
+		>
+			<button type="submit" class="btn btn--danger btn--full">Delete account</button>
+		</form>
 	</div>
 }

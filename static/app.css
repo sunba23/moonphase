@@ -234,6 +234,13 @@ button.btn--secondary[type="submit"] {
 	border-color: var(--edge);
 }
 
+.btn.btn--danger,
+button.btn--danger[type="submit"] {
+	color: var(--failed);
+	background: transparent;
+	border-color: var(--failed);
+}
+
 .btn--full {
 	display: flex;
 	width: 100%;
