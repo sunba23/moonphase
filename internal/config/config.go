@@ -11,6 +11,10 @@ type Config struct {
 	AppEnv                 string
 	SupabaseURL            string
 	SupabasePublishableKey string
+	// SupabaseSecretKey is the service-role key. It authorizes GoTrue's
+	// /admin routes (used to permanently delete an account); the publishable
+	// key is not accepted there.
+	SupabaseSecretKey string
 	// Version is the full commit SHA the running binary was built from, or
 	// "dev" when RAILWAY_GIT_COMMIT_SHA is not set (local runs). The page
 	// footer renders a short form of it.
@@ -38,6 +42,11 @@ func Load() (Config, error) {
 		return Config{}, errors.New("SUPABASE_PUBLISHABLE_KEY is required")
 	}
 
+	supabaseSecretKey := os.Getenv("SUPABASE_SECRET_KEY")
+	if supabaseSecretKey == "" {
+		return Config{}, errors.New("SUPABASE_SECRET_KEY is required")
+	}
+
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
 		return Config{}, errors.New("DATABASE_URL is required")
@@ -54,6 +63,7 @@ func Load() (Config, error) {
 		AppEnv:                 appEnv,
 		SupabaseURL:            supabaseURL,
 		SupabasePublishableKey: supabasePublishableKey,
+		SupabaseSecretKey:      supabaseSecretKey,
 		Version:                version,
 	}, nil
 }
