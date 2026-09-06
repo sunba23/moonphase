@@ -12,11 +12,12 @@ templ signupForm(model AuthFormModel) {
 			}
 			<label>
 				Email
-				<input type="email" name="email" required/>
+				<input type="email" name="email" value={ model.Email } required/>
 			</label>
 			<label>
 				Password
-				<input type="password" name="password" required/>
+				<input type="password" name="password" minlength="8" required/>
+				<small class="field-hint">Use at least 8 characters.</small>
 			</label>
 			<button type="submit" class="btn btn--full">Sign up</button>
 		</form>

@@ -2,9 +2,12 @@ package pages
 
 import "github.com/sunba23/moonphase/internal/catalog"
 
-// AuthFormModel carries per-request state for the signup/signin forms.
+// AuthFormModel carries per-request state for the signup/signin forms. Email
+// is echoed back after a failed submit so the user does not retype it; the
+// password is never repopulated.
 type AuthFormModel struct {
 	Error string
+	Email string
 }
 
 // SessionCardModel backs the swappable #session-card fragment: one problem
