@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img"
+     aria-label="A MoonPhase session: a MoonBoard with holds marked, and buttons to log Sent, Failed or Skip and rate the effort from 1 to 10.">
+  <style>
+    :root {
+      --ground: #e9dcc3; --surface: #f5eee0; --ink: #241c14; --ink-soft: #6b5d49;
+      --accent: #2e4b8f; --edge: #cbb88f; --sent: #1f6f43; --failed: #a8321f; --skip: #7a5a12;
+      --board: #d8c39a;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ground: #141a2a; --surface: #1d2436; --ink: #ece6d8; --ink-soft: #9aa0b4;
+        --accent: #a9b8e8; --edge: #333b52; --sent: #63c090; --failed: #ef9aa6; --skip: #e0bd63;
+        --board: #26304a;
+      }
+    }
+    .bg { fill: var(--ground); }
+    .card { fill: var(--surface); stroke: var(--edge); stroke-width: 2; }
+    .board { fill: var(--board); stroke: var(--edge); stroke-width: 2; }
+    .peg { fill: var(--ink-soft); opacity: .35; }
+    .hand { fill: none; stroke: var(--accent); stroke-width: 4; }
+    .start { fill: none; stroke: var(--sent); stroke-width: 4; }
+    .finish { fill: none; stroke: var(--failed); stroke-width: 4; }
+    .title { fill: var(--ink); font: 600 30px "Fraunces", Georgia, serif; }
+    .chip { fill: var(--ground); stroke: var(--edge); stroke-width: 1.5; }
+    .chip-t { fill: var(--ink-soft); font: 500 18px "Instrument Sans", system-ui, sans-serif; }
+    .btn-t { fill: var(--ink); font: 500 20px "Instrument Sans", system-ui, sans-serif; }
+    .rpe { fill: var(--ground); stroke: var(--edge); stroke-width: 1.5; }
+    .rpe-t { fill: var(--ink-soft); font: 500 19px "Instrument Sans", system-ui, sans-serif; }
+    .lbl { fill: var(--ink-soft); font: 500 17px "Instrument Sans", system-ui, sans-serif; letter-spacing: .08em; }
+  </style>
+
+  <rect class="bg" x="0" y="0" width="1200" height="760"/>
+
+  <!-- Board panel -->
+  <g transform="translate(64 60)">
+    <rect class="card" x="0" y="0" width="560" height="640" rx="16"/>
+    <text class="title" x="32" y="58">Blue Monday</text>
+    <g transform="translate(32 96)">
+      <rect class="chip" x="0" y="0" width="66" height="34" rx="17"/><text class="chip-t" x="33" y="23" text-anchor="middle">6B+</text>
+      <rect class="chip" x="78" y="0" width="60" height="34" rx="17"/><text class="chip-t" x="108" y="23" text-anchor="middle">40°</text>
+      <rect class="chip" x="150" y="0" width="86" height="34" rx="17"/><text class="chip-t" x="193" y="23" text-anchor="middle">2016</text>
+    </g>
+
+    <!-- board grid -->
+    <g transform="translate(60 168)">
+      <rect class="board" x="0" y="0" width="440" height="432" rx="10"/>
+      <g>
+        <!-- pegs: 11 cols x 12 rows -->
+        <!-- generated rows -->
+        <g class="peg">
+          <!-- row spacing 36, starting at 24,24 -->
+          <circle cx="24" cy="24" r="5"/><circle cx="63" cy="24" r="5"/><circle cx="103" cy="24" r="5"/><circle cx="142" cy="24" r="5"/><circle cx="182" cy="24" r="5"/><circle cx="221" cy="24" r="5"/><circle cx="261" cy="24" r="5"/><circle cx="300" cy="24" r="5"/><circle cx="340" cy="24" r="5"/><circle cx="379" cy="24" r="5"/><circle cx="416" cy="24" r="5"/>
+          <circle cx="24" cy="60" r="5"/><circle cx="63" cy="60" r="5"/><circle cx="103" cy="60" r="5"/><circle cx="142" cy="60" r="5"/><circle cx="182" cy="60" r="5"/><circle cx="221" cy="60" r="5"/><circle cx="261" cy="60" r="5"/><circle cx="300" cy="60" r="5"/><circle cx="340" cy="60" r="5"/><circle cx="379" cy="60" r="5"/><circle cx="416" cy="60" r="5"/>
+          <circle cx="24" cy="96" r="5"/><circle cx="63" cy="96" r="5"/><circle cx="103" cy="96" r="5"/><circle cx="142" cy="96" r="5"/><circle cx="182" cy="96" r="5"/><circle cx="221" cy="96" r="5"/><circle cx="261" cy="96" r="5"/><circle cx="300" cy="96" r="5"/><circle cx="340" cy="96" r="5"/><circle cx="379" cy="96" r="5"/><circle cx="416" cy="96" r="5"/>
+          <circle cx="24" cy="132" r="5"/><circle cx="63" cy="132" r="5"/><circle cx="103" cy="132" r="5"/><circle cx="142" cy="132" r="5"/><circle cx="182" cy="132" r="5"/><circle cx="221" cy="132" r="5"/><circle cx="261" cy="132" r="5"/><circle cx="300" cy="132" r="5"/><circle cx="340" cy="132" r="5"/><circle cx="379" cy="132" r="5"/><circle cx="416" cy="132" r="5"/>
+          <circle cx="24" cy="168" r="5"/><circle cx="63" cy="168" r="5"/><circle cx="103" cy="168" r="5"/><circle cx="142" cy="168" r="5"/><circle cx="182" cy="168" r="5"/><circle cx="221" cy="168" r="5"/><circle cx="261" cy="168" r="5"/><circle cx="300" cy="168" r="5"/><circle cx="340" cy="168" r="5"/><circle cx="379" cy="168" r="5"/><circle cx="416" cy="168" r="5"/>
+          <circle cx="24" cy="204" r="5"/><circle cx="63" cy="204" r="5"/><circle cx="103" cy="204" r="5"/><circle cx="142" cy="204" r="5"/><circle cx="182" cy="204" r="5"/><circle cx="221" cy="204" r="5"/><circle cx="261" cy="204" r="5"/><circle cx="300" cy="204" r="5"/><circle cx="340" cy="204" r="5"/><circle cx="379" cy="204" r="5"/><circle cx="416" cy="204" r="5"/>
+          <circle cx="24" cy="240" r="5"/><circle cx="63" cy="240" r="5"/><circle cx="103" cy="240" r="5"/><circle cx="142" cy="240" r="5"/><circle cx="182" cy="240" r="5"/><circle cx="221" cy="240" r="5"/><circle cx="261" cy="240" r="5"/><circle cx="300" cy="240" r="5"/><circle cx="340" cy="240" r="5"/><circle cx="379" cy="240" r="5"/><circle cx="416" cy="240" r="5"/>
+          <circle cx="24" cy="276" r="5"/><circle cx="63" cy="276" r="5"/><circle cx="103" cy="276" r="5"/><circle cx="142" cy="276" r="5"/><circle cx="182" cy="276" r="5"/><circle cx="221" cy="276" r="5"/><circle cx="261" cy="276" r="5"/><circle cx="300" cy="276" r="5"/><circle cx="340" cy="276" r="5"/><circle cx="379" cy="276" r="5"/><circle cx="416" cy="276" r="5"/>
+          <circle cx="24" cy="312" r="5"/><circle cx="63" cy="312" r="5"/><circle cx="103" cy="312" r="5"/><circle cx="142" cy="312" r="5"/><circle cx="182" cy="312" r="5"/><circle cx="221" cy="312" r="5"/><circle cx="261" cy="312" r="5"/><circle cx="300" cy="312" r="5"/><circle cx="340" cy="312" r="5"/><circle cx="379" cy="312" r="5"/><circle cx="416" cy="312" r="5"/>
+          <circle cx="24" cy="348" r="5"/><circle cx="63" cy="348" r="5"/><circle cx="103" cy="348" r="5"/><circle cx="142" cy="348" r="5"/><circle cx="182" cy="348" r="5"/><circle cx="221" cy="348" r="5"/><circle cx="261" cy="348" r="5"/><circle cx="300" cy="348" r="5"/><circle cx="340" cy="348" r="5"/><circle cx="379" cy="348" r="5"/><circle cx="416" cy="348" r="5"/>
+          <circle cx="24" cy="384" r="5"/><circle cx="63" cy="384" r="5"/><circle cx="103" cy="384" r="5"/><circle cx="142" cy="384" r="5"/><circle cx="182" cy="384" r="5"/><circle cx="221" cy="384" r="5"/><circle cx="261" cy="384" r="5"/><circle cx="300" cy="384" r="5"/><circle cx="340" cy="384" r="5"/><circle cx="379" cy="384" r="5"/><circle cx="416" cy="384" r="5"/>
+          <circle cx="24" cy="408" r="5"/><circle cx="63" cy="408" r="5"/><circle cx="103" cy="408" r="5"/><circle cx="142" cy="408" r="5"/><circle cx="182" cy="408" r="5"/><circle cx="221" cy="408" r="5"/><circle cx="261" cy="408" r="5"/><circle cx="300" cy="408" r="5"/><circle cx="340" cy="408" r="5"/><circle cx="379" cy="408" r="5"/><circle cx="416" cy="408" r="5"/>
+        </g>
+        <!-- marked holds -->
+        <circle class="start" cx="142" cy="384" r="14"/>
+        <circle class="start" cx="300" cy="384" r="14"/>
+        <circle class="hand" cx="103" cy="276" r="14"/>
+        <circle class="hand" cx="261" cy="168" r="14"/>
+        <circle class="hand" cx="182" cy="96" r="14"/>
+        <circle class="finish" cx="221" cy="24" r="14"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Controls panel -->
+  <g transform="translate(672 60)">
+    <rect class="card" x="0" y="0" width="464" height="640" rx="16"/>
+
+    <text class="lbl" x="32" y="52">HOW DID IT GO?</text>
+    <g transform="translate(32 72)">
+      <rect x="0" y="0" width="130" height="56" rx="12" fill="none" stroke="var(--sent)" stroke-width="2"/>
+      <text class="btn-t" x="65" y="35" text-anchor="middle" fill="var(--sent)">Sent</text>
+      <rect x="146" y="0" width="130" height="56" rx="12" fill="none" stroke="var(--failed)" stroke-width="2"/>
+      <text class="btn-t" x="211" y="35" text-anchor="middle" fill="var(--failed)">Failed</text>
+      <rect x="292" y="0" width="108" height="56" rx="12" fill="none" stroke="var(--edge)" stroke-width="2"/>
+      <text class="btn-t" x="346" y="35" text-anchor="middle" fill="var(--ink-soft)">Skip</text>
+    </g>
+
+    <text class="lbl" x="32" y="192">RATE THE EFFORT, 1 TO 10</text>
+    <g transform="translate(32 210)">
+      <rect class="rpe" x="0"   y="0" width="72" height="60" rx="12"/><text class="rpe-t" x="36"  y="38" text-anchor="middle">1</text>
+      <rect class="rpe" x="82"  y="0" width="72" height="60" rx="12"/><text class="rpe-t" x="118" y="38" text-anchor="middle">2</text>
+      <rect class="rpe" x="164" y="0" width="72" height="60" rx="12"/><text class="rpe-t" x="200" y="38" text-anchor="middle">3</text>
+      <rect class="rpe" x="246" y="0" width="72" height="60" rx="12"/><text class="rpe-t" x="282" y="38" text-anchor="middle">4</text>
+      <rect class="rpe" x="328" y="0" width="72" height="60" rx="12"/><text class="rpe-t" x="364" y="38" text-anchor="middle">5</text>
+      <rect class="rpe" x="0"   y="72" width="72" height="60" rx="12"/><text class="rpe-t" x="36"  y="110" text-anchor="middle">6</text>
+      <rect class="rpe" x="82"  y="72" width="72" height="60" rx="12" fill="var(--accent)" stroke="var(--accent)"/><text class="rpe-t" x="118" y="110" text-anchor="middle" fill="var(--surface)">7</text>
+      <rect class="rpe" x="164" y="72" width="72" height="60" rx="12"/><text class="rpe-t" x="200" y="110" text-anchor="middle">8</text>
+      <rect class="rpe" x="246" y="72" width="72" height="60" rx="12"/><text class="rpe-t" x="282" y="110" text-anchor="middle">9</text>
+      <rect class="rpe" x="328" y="72" width="72" height="60" rx="12"/><text class="rpe-t" x="364" y="110" text-anchor="middle">10</text>
+    </g>
+
+    <line x1="32" y1="410" x2="432" y2="410" stroke="var(--edge)" stroke-width="1.5"/>
+    <text class="lbl" x="32" y="452">SESSION BALANCE</text>
+    <g transform="translate(32 470)">
+      <rect class="chip" x="0" y="0" width="150" height="34" rx="17"/><text class="chip-t" x="75" y="23" text-anchor="middle">Holding grade</text>
+      <rect class="chip" x="162" y="0" width="132" height="34" rx="17"/><text class="chip-t" x="228" y="23" text-anchor="middle">Off crimp</text>
+    </g>
+    <g transform="translate(32 522)" class="chip-t">
+      <text x="0" y="16">crimp</text>
+      <rect x="90" y="4" width="180" height="14" rx="7" fill="var(--ground)" stroke="var(--edge)" stroke-width="1"/>
+      <rect x="90" y="4" width="150" height="14" rx="7" fill="var(--accent)"/>
+      <text x="284" y="16">3</text>
+      <text x="0" y="46">sloper</text>
+      <rect x="90" y="34" width="180" height="14" rx="7" fill="var(--ground)" stroke="var(--edge)" stroke-width="1"/>
+      <rect x="90" y="34" width="60" height="14" rx="7" fill="var(--accent)"/>
+      <text x="284" y="46">1</text>
+      <text x="0" y="76">jug</text>
+      <rect x="90" y="64" width="180" height="14" rx="7" fill="var(--ground)" stroke="var(--edge)" stroke-width="1"/>
+      <rect x="90" y="64" width="100" height="14" rx="7" fill="var(--accent)"/>
+      <text x="284" y="76">2</text>
+    </g>
+  </g>
+</svg>
