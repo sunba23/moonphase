@@ -3,6 +3,7 @@ context
 .mcp.json
 **.md
 !README.md
+!CHANGELOG.md
 **.env
 bin/
 tmp/
