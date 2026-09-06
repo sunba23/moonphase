@@ -280,8 +280,8 @@ func TestHandleView_ShowsLatestProblem(t *testing.T) {
 		t.Fatalf("handleView body did not show the latest problem: code %d", rec.Code)
 	}
 	// One climbed problem -> the Session-balance panel is present on the
-	// resumed page, and it is a <details> (closed by default).
-	if body := rec.Body.String(); !strings.Contains(body, `<details class="panel"`) ||
+	// resumed page (rendered inside the heading-line info sheet).
+	if body := rec.Body.String(); !strings.Contains(body, `class="panel"`) ||
 		!strings.Contains(body, "Session balance") {
 		t.Fatalf("handleView body is missing the Session-balance panel")
 	}

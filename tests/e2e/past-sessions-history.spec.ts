@@ -130,6 +130,8 @@ test('a climber reviews a finished session\'s climbed problems from history', as
   const name1 = await readCardName(page);
   await submitResult(page, 'Failed', 8);
 
+  // End session now lives in the header behind an hx-confirm prompt.
+  page.on('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'End session' }).click();
   await page.waitForURL((url) => new URL(url).pathname === '/');
 
