@@ -139,6 +139,9 @@ func newTestRouter(verifier *auth.Verifier, authClient *auth.AuthClient, pc Prof
 		r.Get("/onboarding", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
+		r.Post("/account/delete", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
 
 		r.Group(func(r chi.Router) {
 			r.Use(OnboardingGate(pc))
@@ -265,6 +268,28 @@ func TestRouter_SessionWithoutProfileRedirectsToOnboarding(t *testing.T) {
 		if loc := rec.Header().Get("Location"); loc != "/onboarding" {
 			t.Fatalf("%s %s: expected redirect to /onboarding, got %q", tc.method, tc.path, loc)
 		}
+	}
+}
+
+func TestRouter_AccountDeleteNeedsSessionButNotOnboarding(t *testing.T) {
+	id := startTestJWKS(t)
+	router := newTestRouter(id.newVerifier(t), auth.NewAuthClient(id.cfg), &fakeProfileChecker{err: profile.ErrNotFound})
+
+	// No session -> bounced to /signin.
+	noSession := httptest.NewRecorder()
+	router.ServeHTTP(noSession, httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/account/delete", nil))
+	if noSession.Code != http.StatusFound || noSession.Header().Get("Location") != "/signin" {
+		t.Fatalf("no session: code %d location %q, want 302 /signin", noSession.Code, noSession.Header().Get("Location"))
+	}
+
+	// Signed in but not onboarded -> still reaches the handler (an un-onboarded
+	// user must be able to delete their account).
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/account/delete", nil)
+	req.AddCookie(&http.Cookie{Name: "mp_session", Value: id.signToken(t, "user-1")})
+	withSession := httptest.NewRecorder()
+	router.ServeHTTP(withSession, req)
+	if withSession.Code != http.StatusOK {
+		t.Fatalf("onboarded=false: code %d, want 200 (not gated to onboarding)", withSession.Code)
 	}
 }
 

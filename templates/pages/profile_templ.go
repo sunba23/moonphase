@@ -192,7 +192,7 @@ func ProfileForm(model ProfileModel) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</select></label> <button type=\"submit\" class=\"btn btn--full\">Save</button></form><form class=\"signout\" hx-post=\"/signout\" hx-swap=\"none\"><button type=\"submit\" class=\"btn btn--secondary btn--full\">Sign out</button></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</select></label> <button type=\"submit\" class=\"btn btn--full\">Save</button></form><form class=\"signout\" hx-post=\"/signout\" hx-swap=\"none\"><button type=\"submit\" class=\"btn btn--secondary btn--full\">Sign out</button></form><form class=\"delete-account\" hx-post=\"/account/delete\" hx-swap=\"none\" hx-confirm=\"This permanently deletes your account, every session, and every rating. This cannot be undone. Continue?\"><button type=\"submit\" class=\"btn btn--danger btn--full\">Delete account</button></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
