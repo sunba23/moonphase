@@ -1,0 +1,17 @@
+package layout
+
+// footer is a direct child of <body> in both shells, so it is the document's
+// implicit contentinfo landmark — no explicit role needed. It shows the running
+// commit: a linked short SHA in production, a plain "dev" locally.
+templ footer() {
+	{{ full := versionFromContext(ctx) }}
+	<footer class="sitefooter">
+		if url := commitURL(full); url == "" {
+			<span class="sitefooter__sha">dev</span>
+		} else {
+			<a class="sitefooter__link" href={ templ.SafeURL(url) } target="_blank" rel="noopener">
+				{ shortVersion(full) }
+			</a>
+		}
+	</footer>
+}
