@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MoonPhase — adaptive MoonBoard training</title>
+<meta name="description" content="MoonPhase is a training coach for the MoonBoard. It picks your next problem during a session, based on how the last one felt and the holds you have already climbed.">
+<meta name="theme-color" content="#E9DCC3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141A2A" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="favicon.svg">
+<style>
+  @font-face {
+    font-family: "Fraunces";
+    src: url("fonts/fraunces-latin.woff2") format("woff2");
+    font-weight: 400 600;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Instrument Sans";
+    src: url("fonts/instrument-sans-latin.woff2") format("woff2");
+    font-weight: 400 600;
+    font-display: swap;
+  }
+
+  :root {
+    --ground: #e9dcc3;
+    --surface: #f5eee0;
+    --ink: #241c14;
+    --ink-soft: #6b5d49;
+    --accent: #2e4b8f;
+    --accent-ink: #f5eee0;
+    --edge: #cbb88f;
+    --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+    --font-body: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #141a2a;
+      --surface: #1d2436;
+      --ink: #ece6d8;
+      --ink-soft: #9aa0b4;
+      --accent: #a9b8e8;
+      --accent-ink: #141a2a;
+      --edge: #333b52;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 1.0625rem / 1.65 var(--font-body);
+    padding: clamp(1.5rem, 5vw, 4rem) 1.25rem;
+  }
+
+  main {
+    max-width: 42rem;
+    margin: 0 auto;
+  }
+
+  a {
+    color: var(--accent);
+    text-underline-offset: 2px;
+  }
+  a:focus-visible,
+  .cta:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  header {
+    margin-bottom: 3rem;
+  }
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .wordmark img { width: 28px; height: 28px; }
+  .tagline {
+    margin: 0.75rem 0 0;
+    font-size: 1.25rem;
+    color: var(--ink-soft);
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.4rem;
+    letter-spacing: -0.01em;
+    margin: 2.75rem 0 0.75rem;
+  }
+
+  p { margin: 0 0 1rem; }
+
+  .preview {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 1.5rem 0 0.5rem;
+    border: 1px solid var(--edge);
+    border-radius: 12px;
+  }
+  figcaption {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+  }
+  figure { margin: 0; }
+
+  ol.steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+  }
+  ol.steps li {
+    counter-increment: step;
+    position: relative;
+    padding-left: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  ol.steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-radius: 999px;
+  }
+  ol.steps b { font-weight: 600; }
+
+  .note {
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+
+  .cta {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.7rem 1.4rem;
+    font: inherit;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-radius: 999px;
+    text-decoration: none;
+  }
+
+  footer {
+    margin-top: 3.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--edge);
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+  }
+  footer p { margin: 0.35rem 0; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="wordmark">
+      <img src="favicon.svg" alt="">
+      <span>MoonPhase</span>
+    </div>
+    <p class="tagline">An adaptive training coach for the MoonBoard.</p>
+  </header>
+
+  <h2>What it is</h2>
+  <p>
+    The MoonBoard is a standard climbing wall with hundreds of set problems. MoonPhase
+    runs your training session on it. After each problem you climb, it picks the next
+    one for you &mdash; adjusted to how hard the last one felt and to the hold types you
+    have already worked that session.
+  </p>
+
+  <figure>
+    <img class="preview" src="session-preview.svg"
+         alt="A MoonPhase session: a MoonBoard with start, hand and finish holds marked, next to buttons for Sent, Failed and Skip and a 1-to-10 effort rating.">
+    <figcaption>One problem at a time, with a quick result to log after each.</figcaption>
+  </figure>
+
+  <h2>Why it exists</h2>
+  <p>
+    Climbers without a coach tend to train by feel. You pick the problems that look good,
+    push hard on the ones your ego likes, and repeat your favourite style week after week.
+    Over months that lopsided load &mdash; too many crimps, not enough rest on a tired day
+    &mdash; is how finger, elbow and shoulder injuries start.
+  </p>
+  <p>
+    MoonPhase takes the choosing away. Every session builds up from easy problems, steps
+    up only when you report one felt easy, and backs off when one felt hard or you failed
+    it. It also spreads the work across hold types, so you are not doing four crimp
+    problems in a row. You still train hard; you just stop picking the session that hurts
+    you.
+  </p>
+
+  <h2>How to use it</h2>
+  <ol class="steps">
+    <li><b>Sign up and set your board.</b> Choose your hardest grade, your MoonBoard set
+      and the wall angle.</li>
+    <li><b>Start a session.</b> MoonPhase shows you a problem on the board, with its
+      holds marked.</li>
+    <li><b>Climb it, then log the result.</b> Tap <b>Sent</b> or <b>Failed</b>, then rate
+      the effort from <b>1</b> (easy) to <b>10</b> (maximal). Not attempting it? Tap
+      <b>Skip</b>.</li>
+    <li><b>Get the next problem.</b> It appears straight away &mdash; easier or harder
+      based on your rating, and often a different hold type.</li>
+    <li><b>End the session</b> when you are done. It is saved. Open <b>Past sessions</b>
+      any time to see every problem, rating and result.</li>
+  </ol>
+  <p class="note">
+    Best used one-handed on a phone at the wall. A full session currently needs the 2016
+    or 2024 MoonBoard set. Your sessions are private to you.
+  </p>
+
+  <h2>Try it</h2>
+  <p>
+    <a class="cta" href="https://moonphase-production-7370.up.railway.app">Open MoonPhase</a>
+  </p>
+
+  <footer>
+    <p><a href="https://github.com/sunba23/moonphase">Source on GitHub</a></p>
+    <p>Not affiliated with MoonBoard or Moon Climbing.</p>
+  </footer>
+</main>
+</body>
+</html>
