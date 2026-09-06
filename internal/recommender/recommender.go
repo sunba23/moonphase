@@ -350,19 +350,21 @@ func (r *Recommender) tieredPick(
 }
 
 // FirstPick returns a problem at the minimum grade available on
-// (holdsetup, angle), quality-filtered where possible.
-func (r *Recommender) FirstPick(ctx context.Context, holdsetup, angle int16) (Pick, error) {
+// (holdsetup, angle), quality-filtered where possible. poolSize is the number
+// of minimum-grade candidates the pick was drawn from, for the rec_pick log.
+func (r *Recommender) FirstPick(ctx context.Context, holdsetup, angle int16) (pick Pick, poolSize int, err error) {
 	return r.FirstPickExcluding(ctx, holdsetup, angle, nil)
 }
 
 // FirstPickExcluding is FirstPick with an exclude list. It backs the "skip
 // before anything is rated" path: there is no rated result to anchor a window,
 // so the next pick is another minimum-grade problem (FR-011) — minus every
-// problem already shown this session.
-func (r *Recommender) FirstPickExcluding(ctx context.Context, holdsetup, angle int16, excludeIDs []int64) (Pick, error) {
+// problem already shown this session. poolSize is the post-exclusion
+// minimum-grade candidate count.
+func (r *Recommender) FirstPickExcluding(ctx context.Context, holdsetup, angle int16, excludeIDs []int64) (pick Pick, poolSize int, err error) {
 	cands, err := catalog.MinGradeCandidates(ctx, r.pool, holdsetup, angle)
 	if err != nil {
-		return Pick{}, fmt.Errorf("recommender: first pick: %w", err)
+		return Pick{}, 0, fmt.Errorf("recommender: first pick: %w", err)
 	}
 
 	excluded := make(map[int64]struct{}, len(excludeIDs))
@@ -378,5 +380,6 @@ func (r *Recommender) FirstPickExcluding(ctx context.Context, holdsetup, angle i
 		mapped = append(mapped, Candidate(c))
 	}
 
-	return pickFrom(mapped, r.rng.IntN)
+	pick, err = pickFrom(mapped, r.rng.IntN)
+	return pick, len(mapped), err
 }
