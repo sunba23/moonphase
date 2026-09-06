@@ -76,6 +76,7 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 			r.Post("/session", sp.handleStart)
 			r.Get("/session/{sessionID}", sp.handleView)
 			r.Post("/session/{sessionID}/result", sp.handleResult)
+			r.Post("/session/{sessionID}/skip", sp.handleSkip)
 			r.Post("/session/{sessionID}/end", sp.handleEnd)
 
 			r.Get("/sessions", hsp.handleList)

@@ -194,7 +194,7 @@ func (s *sessionPages) handleResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	completion := r.FormValue("completion")
-	if !session.ValidCompletion(completion) {
+	if !session.ValidRatedCompletion(completion) {
 		http.Error(w, "bad completion", http.StatusUnprocessableEntity)
 		return
 	}
@@ -210,15 +210,12 @@ func (s *sessionPages) handleResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	last := shown[len(shown)-1]
-	if seq != last.Seq || last.RPE != nil {
+	if seq != last.Seq || last.Completion != nil {
 		http.Error(w, "stale result", http.StatusConflict)
 		return
 	}
 
-	states := make([]recommender.ShownState, len(shown))
-	for i, sp := range shown {
-		states[i] = recommender.ShownState{ProblemID: sp.ProblemID, Grade: sp.Grade, Dominant: sp.Dominant}
-	}
+	states := toShownStates(shown)
 
 	pick, diag, err := s.rec.PickNext(ctx, recommender.PickNextInput{
 		Holdsetup:       sess.Holdsetup,
@@ -250,14 +247,37 @@ func (s *sessionPages) handleResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view, err := catalog.ProblemDetail(ctx, s.pool, pick.ConfigurationID)
+	s.renderNextCard(w, r, sess, sessionID, seq+1, pick.ConfigurationID)
+}
+
+// toShownStates maps a session's seq-ordered shown list onto the recommender's
+// input. A stored completion of "skipped" flags the entry as inert.
+func toShownStates(shown []session.ShownProblem) []recommender.ShownState {
+	states := make([]recommender.ShownState, len(shown))
+	for i, sp := range shown {
+		states[i] = recommender.ShownState{
+			ProblemID: sp.ProblemID,
+			Grade:     sp.Grade,
+			Dominant:  sp.Dominant,
+			Skipped:   sp.Completion != nil && *sp.Completion == session.CompletionSkipped,
+		}
+	}
+	return states
+}
+
+// renderNextCard re-renders the #session-card fragment for the newly inserted
+// problem at newSeq. Shared tail of handleResult and handleSkip.
+func (s *sessionPages) renderNextCard(w http.ResponseWriter, r *http.Request, sess *session.Session, sessionID string, newSeq int, configurationID int64) {
+	ctx := r.Context()
+
+	view, err := catalog.ProblemDetail(ctx, s.pool, configurationID)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("session: load next problem detail failed")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	// Reload the shown list so it carries the just-rated problem and the new
+	// Reload the shown list so it carries the resolved problem and the new
 	// pick; both feed the Session-balance panel.
 	shownAfter, err := s.sessions.ShownProblems(ctx, sessionID)
 	if err != nil {
@@ -273,9 +293,117 @@ func (s *sessionPages) handleResult(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderPage(w, r, pages.SessionCard(pages.SessionCardModel{
-		SessionID: sessionID, Seq: seq + 1, Problem: *view,
+		SessionID: sessionID, Seq: newSeq, Problem: *view,
 		Panel: buildSessionPanel(ladder, shownAfter),
 	}), http.StatusOK)
+}
+
+// handleSkip (POST /session/{sessionID}/skip) records the current problem as
+// skipped — no RPE, inert for the recommender — and swaps in another pick as if
+// the skip had not happened. The skipped problem is still excluded from the rest
+// of the session.
+func (s *sessionPages) handleSkip(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID, ok := auth.UserIDFromContext(ctx)
+	if !ok {
+		http.Error(w, "internal error: no user id in context", http.StatusInternalServerError)
+		return
+	}
+
+	sessionID := chi.URLParam(r, "sessionID")
+	sess, err := s.sessions.Get(ctx, sessionID)
+	if err != nil || sess.UserID != userID {
+		http.NotFound(w, r)
+		return
+	}
+	if sess.Status != session.StatusActive {
+		http.Error(w, "session not active", http.StatusConflict)
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxAuthFormBytes)
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad form", http.StatusBadRequest)
+		return
+	}
+	seq, err := strconv.Atoi(r.FormValue("seq"))
+	if err != nil {
+		http.Error(w, "bad seq", http.StatusUnprocessableEntity)
+		return
+	}
+
+	shown, err := s.sessions.ShownProblems(ctx, sessionID)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("session: load shown problems failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if len(shown) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+	last := shown[len(shown)-1]
+	if seq != last.Seq || last.Completion != nil {
+		http.Error(w, "stale result", http.StatusConflict)
+		return
+	}
+
+	// The problem being skipped is still completion IS NULL in the DB; flag it
+	// here so the recommender treats it as inert.
+	states := toShownStates(shown)
+	states[len(states)-1].Skipped = true
+
+	shownIDs := make([]int64, len(shown))
+	var anchor *session.ShownProblem
+	for i := range shown {
+		shownIDs[i] = shown[i].ProblemID
+		if shown[i].RPE != nil {
+			anchor = &shown[i]
+		}
+	}
+
+	var pick recommender.Pick
+	if anchor == nil {
+		// Nothing rated yet — another minimum-grade pick (FR-011).
+		pick, err = s.rec.FirstPickExcluding(ctx, sess.Holdsetup, sess.Angle, shownIDs)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("session: skip first-pick failed")
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		var diag recommender.PickDiag
+		pick, diag, err = s.rec.PickNext(ctx, recommender.PickNextInput{
+			Holdsetup:       sess.Holdsetup,
+			Angle:           sess.Angle,
+			SessionMaxGrade: sess.MaxGrade,
+			Shown:           states,
+			CurrentResult:   recommender.Result{RPE: int(*anchor.RPE), Completion: recommender.Completion(*anchor.Completion)},
+		})
+		if err != nil {
+			s.logger.Error().Err(err).Msg("session: skip pick next failed")
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		if diag.FallbackTier > 0 {
+			s.logger.Warn().Int("tier", diag.FallbackTier).
+				Str("session", sessionID).Msg("session: skip pick used a fallback tier")
+		}
+	}
+
+	if err := s.sessions.SkipProblem(ctx, sessionID, seq, session.SessionProblem{
+		Seq: seq + 1, ProblemID: pick.ProblemID, ConfigurationID: pick.ConfigurationID,
+	}); err != nil {
+		if errors.Is(err, session.ErrStaleResult) {
+			http.Error(w, "stale result", http.StatusConflict)
+			return
+		}
+		s.logger.Error().Err(err).Msg("session: skip advance failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	s.renderNextCard(w, r, sess, sessionID, seq+1, pick.ConfigurationID)
 }
 
 // handleEnd (POST /session/{sessionID}/end) ends the active session and

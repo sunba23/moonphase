@@ -67,17 +67,22 @@ const (
 	StatusEnded  = "ended"
 )
 
-// Completion status values for a per-problem result (FR-008).
+// Completion status values for a per-problem outcome (FR-008). Sent and failed
+// are rated results and carry an RPE 1–10; skipped records that the climber
+// chose not to attempt the problem — it carries no RPE and is inert for the
+// recommender and for session history.
 const (
-	CompletionSent   = "sent"
-	CompletionFailed = "failed"
-	CompletionBailed = "bailed"
+	CompletionSent    = "sent"
+	CompletionFailed  = "failed"
+	CompletionSkipped = "skipped"
 )
 
-// ValidCompletion reports whether s is one of the three completion statuses.
-func ValidCompletion(s string) bool {
+// ValidRatedCompletion reports whether s is a rated completion status — the only
+// values POST /session/{id}/result accepts. A skip goes through its own endpoint
+// and never passes a status through here.
+func ValidRatedCompletion(s string) bool {
 	switch s {
-	case CompletionSent, CompletionFailed, CompletionBailed:
+	case CompletionSent, CompletionFailed:
 		return true
 	default:
 		return false

@@ -187,7 +187,7 @@ func (s *Store) AdvanceSession(ctx context.Context, sessionID string, curSeq int
 	tag, err := tx.Exec(ctx, `
 		UPDATE session_problems
 		SET rpe = $1, completion = $2, climbed_at = now()
-		WHERE session_id = $3 AND seq = $4 AND rpe IS NULL
+		WHERE session_id = $3 AND seq = $4 AND completion IS NULL
 		  AND seq = (SELECT max(seq) FROM session_problems WHERE session_id = $3)
 	`, rpe, completion, sessionID, curSeq)
 	if err != nil {
@@ -206,6 +206,45 @@ func (s *Store) AdvanceSession(ctx context.Context, sessionID string, curSeq int
 
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("session: commit advance tx: %w", err)
+	}
+	return nil
+}
+
+// SkipProblem records the current problem as skipped (no RPE) and inserts the
+// next problem in one transaction. Mirrors AdvanceSession: the guarded UPDATE
+// touches only the live, still-unresolved row (completion IS NULL, highest seq),
+// so a duplicate submit affects 0 rows and returns ErrStaleResult with no second
+// insert. A skipped row is inert for the recommender and never appears in
+// history.
+func (s *Store) SkipProblem(ctx context.Context, sessionID string, curSeq int, next SessionProblem) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("session: begin skip tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	tag, err := tx.Exec(ctx, `
+		UPDATE session_problems
+		SET completion = 'skipped', climbed_at = now()
+		WHERE session_id = $1 AND seq = $2 AND completion IS NULL
+		  AND seq = (SELECT max(seq) FROM session_problems WHERE session_id = $1)
+	`, sessionID, curSeq)
+	if err != nil {
+		return fmt.Errorf("session: update skip: %w", err)
+	}
+	if tag.RowsAffected() != 1 {
+		return ErrStaleResult
+	}
+
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO session_problems (session_id, seq, problem_id, problem_configuration_id)
+		VALUES ($1, $2, $3, $4)
+	`, sessionID, curSeq+1, next.ProblemID, next.ConfigurationID); err != nil {
+		return fmt.Errorf("session: insert next problem after skip: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("session: commit skip tx: %w", err)
 	}
 	return nil
 }

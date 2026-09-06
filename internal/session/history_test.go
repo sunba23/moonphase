@@ -119,7 +119,7 @@ func TestClimbedProblems(t *testing.T) {
 		session.SessionProblem{Seq: 1, ProblemID: p1, ConfigurationID: c1}); err != nil {
 		t.Fatalf("advance seq 0: %v", err)
 	}
-	if err := store.AdvanceSession(ctx, s1.ID, 1, 8, session.CompletionBailed,
+	if err := store.AdvanceSession(ctx, s1.ID, 1, 8, session.CompletionFailed,
 		session.SessionProblem{Seq: 2, ProblemID: p2, ConfigurationID: c2}); err != nil {
 		t.Fatalf("advance seq 1: %v", err)
 	}
@@ -140,8 +140,8 @@ func TestClimbedProblems(t *testing.T) {
 	if got[0].RPE != 4 || got[0].Completion != session.CompletionSent {
 		t.Fatalf("row 0 = RPE %d %q, want 4 sent", got[0].RPE, got[0].Completion)
 	}
-	if got[1].RPE != 8 || got[1].Completion != session.CompletionBailed {
-		t.Fatalf("row 1 = RPE %d %q, want 8 bailed", got[1].RPE, got[1].Completion)
+	if got[1].RPE != 8 || got[1].Completion != session.CompletionFailed {
+		t.Fatalf("row 1 = RPE %d %q, want 8 failed", got[1].RPE, got[1].Completion)
 	}
 	if got[0].Grade != "6B" || got[1].Grade != "6B+" {
 		t.Fatalf("grades = %q %q, want 6B 6B+", got[0].Grade, got[1].Grade)
