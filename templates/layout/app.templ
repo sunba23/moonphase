@@ -9,6 +9,9 @@ type NavModel struct {
 	BoardName string
 	Angle     int16
 	MaxGrade  string
+	// EndSessionID is set only on the live session full page; when present the
+	// header carries an End-session control.
+	EndSessionID string
 }
 
 templ appHeader(nav NavModel) {
@@ -19,6 +22,16 @@ templ appHeader(nav NavModel) {
 			</svg>
 			MoonPhase
 		</a>
+		if nav.EndSessionID != "" {
+			<form
+				class="appbar__end"
+				hx-post={ "/session/" + nav.EndSessionID + "/end" }
+				hx-swap="none"
+				hx-confirm="End this session?"
+			>
+				<button type="submit" class="btn btn--secondary appbar__end-btn">End session</button>
+			</form>
+		}
 		<div class="appbar__context">
 			<span class="chip">{ nav.BoardName }</span>
 			<span class="chip">{ strconv.Itoa(int(nav.Angle)) }°</span>
