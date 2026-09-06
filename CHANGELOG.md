@@ -1,29 +1,22 @@
 # Changelog
 
-All notable changes to this project are recorded in this file.
+Notable changes, newest first. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [SemVer](https://semver.org/spec/v2.0.0.html).
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
+## [1.0.0] - 2026-09-06
 
 ### Added
 
-- GitHub Actions CI workflow (`.github/workflows/ci.yml`): build, templ
-  staleness check, `go vet`, `golangci-lint`, format check, `govulncheck`, and
-  the full test suite, on every pull request and on pushes to `main` and
-  `release/*`. A non-blocking `bench` job runs the recommender benchmarks.
-- `main` is branch-protected: the `ci` check must pass before a pull request
-  merges, and Railway holds each production deploy until `ci` passes
-  ("Wait for CI").
-- Release-branch workflow: features merge into `release/vX.Y.Z`, which is then
-  merged into `main` as one batch; the merge to `main` deploys, and `vX.Y.Z`
-  tags are release markers and rollback points.
-- Page footer that shows the running commit SHA, linked to the GitHub commit
-  (`dev` when run locally).
-- `CHANGELOG.md` and a release procedure in `README.md`.
+- `rec_pick` decision log: one structured line per recommender pick, keyed by
+  session id, capturing the inputs and the chosen problem.
+- GitHub Actions CI (build, templ check, vet, lint, format, `govulncheck`,
+  tests) on PRs and pushes to `main` / `release/*`; non-blocking recommender
+  benchmarks. `main` branch-protected; Railway waits for CI before deploying.
+- Release-branch flow: features land on `release/vX.Y.Z`, merged to `main` as
+  one batch; `vX.Y.Z` tags mark releases.
+- Page footer showing the running commit SHA (`dev` locally).
+- Dependabot for Go modules, GitHub Actions, and npm.
 
 ### Changed
 
-- Go toolchain directive raised to 1.26.6; `golang.org/x/crypto` to v0.56.0 and
-  `github.com/moby/go-archive` to v0.3.0, to clear `govulncheck` findings.
+- Go 1.26.6; `golang.org/x/crypto` v0.56.0, `github.com/moby/go-archive` v0.3.0
+  (clears `govulncheck`).
