@@ -240,3 +240,68 @@ func TestPickNext(t *testing.T) {
 		}
 	})
 }
+
+// TestPickNextDiagFields pins the decision-log diagnostics widened for the
+// rec_pick log: Band, PreferredGrade, TieSetSize, and pick.Dominant.
+func TestPickNextDiagFields(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+
+	ext := 0
+	next := func() int { ext++; return ext }
+	for _, g := range []string{"6B", "6B+", "6C"} {
+		for _, d := range []string{"crimp", "sloper", "jug"} {
+			seedPick(ctx, t, pool, next(), g, d)
+		}
+	}
+	rec := New(pool)
+
+	cases := []struct {
+		name      string
+		rpe       int
+		comp      Completion
+		fromGrade string
+		wantBand  string
+		wantPref  string
+	}{
+		{"easy send steps up", 3, CompletionSent, "6B", "step_up", "6B+"},
+		{"mid send holds", 6, CompletionSent, "6B+", "hold", "6B+"},
+		{"hard send backs off", 9, CompletionSent, "6C", "back_off", "6B+"},
+		{"failed backs off", 5, CompletionFailed, "6C", "back_off", "6B+"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, diag, err := rec.PickNext(ctx, PickNextInput{
+				Holdsetup: 1, Angle: 40, SessionMaxGrade: "7A",
+				Shown:         []ShownState{{ProblemID: 999000, Grade: c.fromGrade, Dominant: "jug"}},
+				CurrentResult: Result{RPE: c.rpe, Completion: c.comp},
+			})
+			if err != nil {
+				t.Fatalf("PickNext: %v", err)
+			}
+			if diag.Band != c.wantBand {
+				t.Fatalf("Band = %q, want %q", diag.Band, c.wantBand)
+			}
+			if diag.PreferredGrade != c.wantPref {
+				t.Fatalf("PreferredGrade = %q, want %q", diag.PreferredGrade, c.wantPref)
+			}
+			if diag.FallbackTier == 0 && diag.TieSetSize < 1 {
+				t.Fatalf("TieSetSize = %d at tier 0, want >= 1", diag.TieSetSize)
+			}
+		})
+	}
+
+	t.Run("tier-0 pick carries a dominant", func(t *testing.T) {
+		pick, diag, err := rec.PickNext(ctx, PickNextInput{
+			Holdsetup: 1, Angle: 40, SessionMaxGrade: "7A",
+			Shown:         []ShownState{{ProblemID: 999000, Grade: "6B", Dominant: "jug"}},
+			CurrentResult: Result{RPE: 3, Completion: CompletionSent},
+		})
+		if err != nil {
+			t.Fatalf("PickNext: %v", err)
+		}
+		if diag.FallbackTier == 0 && pick.Dominant == "" {
+			t.Fatalf("tier-0 pick has empty Dominant")
+		}
+	})
+}

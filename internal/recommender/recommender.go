@@ -24,11 +24,14 @@ type Candidate struct {
 	Repeats         int
 }
 
-// Pick is the recommender's output: one problem to show next.
+// Pick is the recommender's output: one problem to show next. Dominant is the
+// chosen problem's dominant hold type when known (empty for FirstPick-style and
+// tier-4 picks, which draw from a pool that carries no hold-type join).
 type Pick struct {
 	ProblemID       int64
 	ConfigurationID int64
 	Grade           string
+	Dominant        string
 }
 
 // ErrNoCandidates means the catalog returned nothing for the board+angle —
@@ -108,11 +111,19 @@ type PickNextInput struct {
 
 // PickDiag reports how PickNext reached its answer, for handler-side logging.
 // FallbackTier 0 means the primary query succeeded.
+//
+// Band is the classify() direction ("back_off" / "hold" / "step_up").
+// PreferredGrade is the ladder grade the scorer aimed at inside the clamped
+// window. TieSetSize is how many candidates the winning pick tied with (>= 1
+// when a scored tier produced the pick; 0 for a tier-4 random fallback).
 type PickDiag struct {
 	FallbackTier     int
 	GradeLo          string
 	GradeHi          string
 	ExcludedDominant string
+	Band             string
+	PreferredGrade   string
+	TieSetSize       int
 }
 
 const nextPickLimit = 500
@@ -184,6 +195,7 @@ func (r *Recommender) PickNext(ctx context.Context, in PickNextInput) (Pick, Pic
 	last := active[len(active)-1]
 
 	b := classify(in.CurrentResult)
+	diag.Band = b.String()
 	lo, hi, _ := gradeWindow(ladder, last.Grade, b)
 	hi = minGradeOnLadder(ladder, hi, in.SessionMaxGrade)
 	// lo must never exceed hi after the ceiling clamp.
@@ -211,6 +223,9 @@ func (r *Recommender) PickNext(ctx context.Context, in PickNextInput) (Pick, Pic
 	}
 	if loIdx := indexOf(ladder, lo); loIdx >= 0 && prefIdx < loIdx {
 		prefIdx = loIdx
+	}
+	if prefIdx >= 0 && prefIdx < len(ladder) {
+		diag.PreferredGrade = ladder[prefIdx]
 	}
 
 	st := ScoreState{
@@ -248,12 +263,13 @@ func (r *Recommender) tieredPick(
 		if len(sc) == 0 {
 			return Pick{}, false
 		}
-		idx, err := scoreNext(sc, s, r.rng.IntN)
+		idx, tieSize, err := scoreNext(sc, s, r.rng.IntN)
 		if err != nil {
 			return Pick{}, false
 		}
+		diag.TieSetSize = tieSize
 		c := sc[idx]
-		return Pick{ProblemID: c.ProblemID, ConfigurationID: c.ConfigurationID, Grade: ladder[c.GradeIndex]}, true
+		return Pick{ProblemID: c.ProblemID, ConfigurationID: c.ConfigurationID, Grade: ladder[c.GradeIndex], Dominant: c.Dominant}, true
 	}
 
 	// Tier 0 — full window, exclude shown + streak dominant.
