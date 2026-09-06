@@ -109,7 +109,7 @@ func TestHandleResult(t *testing.T) {
 	if got := post(other, "seq=0&rpe=5&completion=sent").Code; got != http.StatusNotFound {
 		t.Fatalf("non-owner: expected 404, got %d", got)
 	}
-	for _, bad := range []string{"seq=0&rpe=0&completion=sent", "seq=0&rpe=11&completion=sent", "seq=0&rpe=5&completion=lol", "rpe=5&completion=sent"} {
+	for _, bad := range []string{"seq=0&rpe=0&completion=sent", "seq=0&rpe=11&completion=sent", "seq=0&rpe=5&completion=lol", "seq=0&rpe=5&completion=skipped", "rpe=5&completion=sent"} {
 		if got := post(owner, bad).Code; got != http.StatusUnprocessableEntity {
 			t.Fatalf("%q: expected 422, got %d", bad, got)
 		}
@@ -157,6 +157,94 @@ func TestHandleResult(t *testing.T) {
 	_ = pool.QueryRow(ctx, `SELECT count(*) FROM session_problems WHERE session_id = $1 AND rpe IS NOT NULL`, started.ID).Scan(&rated)
 	if status != "ended" || rated != 2 {
 		t.Fatalf("post-end: status %q rated %d, want ended/2", status, rated)
+	}
+}
+
+func TestHandleSkip(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+	logger := zerolog.Nop()
+	store := session.NewStore(pool)
+	sp := newSessionPages(pool, profile.NewStore(pool), store, recommender.New(pool), &logger)
+
+	owner := seedUserRow(ctx, t, pool)
+	other := seedUserRow(ctx, t, pool)
+
+	p0, c0 := seedCandidate(ctx, t, pool, 820, "6B", "crimp")
+	seedCandidate(ctx, t, pool, 821, "6B", "sloper")
+	seedCandidate(ctx, t, pool, 822, "6B", "jug")
+	seedCandidate(ctx, t, pool, 823, "6B+", "jug")
+
+	started, err := store.StartSession(ctx, session.Session{
+		UserID: owner, Holdsetup: 1, Angle: 40, MaxGrade: "7A",
+	}, session.SessionProblem{Seq: 0, ProblemID: p0, ConfigurationID: c0})
+	if err != nil {
+		t.Fatalf("StartSession: %v", err)
+	}
+
+	router := chi.NewRouter()
+	router.Post("/session/{sessionID}/skip", sp.handleSkip)
+	router.Post("/session/{sessionID}/result", sp.handleResult)
+
+	skip := func(userID, body string) *httptest.ResponseRecorder {
+		req := httptest.NewRequestWithContext(auth.WithUserID(ctx, userID), http.MethodPost, "/session/"+started.ID+"/skip", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+		return rec
+	}
+
+	if got := skip(other, "seq=0").Code; got != http.StatusNotFound {
+		t.Fatalf("non-owner skip: expected 404, got %d", got)
+	}
+
+	// Skip before anything is rated -> another minimum-grade pick, not p0.
+	rec := skip(owner, "seq=0")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("skip happy path: expected 200, got %d", rec.Code)
+	}
+	if body := strings.TrimSpace(rec.Body.String()); !strings.HasPrefix(body, `<div id="session-card"`) {
+		t.Fatalf("skip body is not a bare session-card fragment: %.80s", body)
+	}
+
+	shown, _ := store.ShownProblems(ctx, started.ID)
+	if len(shown) != 2 {
+		t.Fatalf("after skip shown = %d rows, want 2", len(shown))
+	}
+	if shown[0].Completion == nil || *shown[0].Completion != session.CompletionSkipped || shown[0].RPE != nil {
+		t.Fatalf("seq 0 = completion %v rpe %v, want skipped/nil", shown[0].Completion, shown[0].RPE)
+	}
+	if shown[1].ProblemID == p0 {
+		t.Fatalf("skip re-recommended the skipped problem")
+	}
+
+	// Re-skipping the now-resolved seq 0 is a 409.
+	if got := skip(owner, "seq=0").Code; got != http.StatusConflict {
+		t.Fatalf("stale skip: expected 409, got %d", got)
+	}
+
+	// Rate seq 1, then skip seq 2 -> the PickNext (anchored) path.
+	post := httptest.NewRequestWithContext(auth.WithUserID(ctx, owner), http.MethodPost, "/session/"+started.ID+"/result", strings.NewReader("seq=1&rpe=3&completion=sent"))
+	post.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	postRec := httptest.NewRecorder()
+	router.ServeHTTP(postRec, post)
+	if postRec.Code != http.StatusOK {
+		t.Fatalf("rate seq 1: expected 200, got %d", postRec.Code)
+	}
+	if got := skip(owner, "seq=2").Code; got != http.StatusOK {
+		t.Fatalf("anchored skip: expected 200, got %d", got)
+	}
+	shown, _ = store.ShownProblems(ctx, started.ID)
+	if len(shown) != 4 || shown[2].Completion == nil || *shown[2].Completion != session.CompletionSkipped {
+		t.Fatalf("after anchored skip shown = %+v", shown)
+	}
+
+	// Ending the session then skipping is a 409.
+	if err := store.EndSession(ctx, started.ID, owner); err != nil {
+		t.Fatalf("EndSession: %v", err)
+	}
+	if got := skip(owner, "seq=3").Code; got != http.StatusConflict {
+		t.Fatalf("skip on ended session: expected 409, got %d", got)
 	}
 }
 

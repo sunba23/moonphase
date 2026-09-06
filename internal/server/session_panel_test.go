@@ -18,6 +18,44 @@ func currentProblem(grade, dominant string) session.ShownProblem {
 	return session.ShownProblem{Grade: grade, Dominant: dominant}
 }
 
+func skippedProblem(grade, dominant string) session.ShownProblem {
+	done := session.CompletionSkipped
+	return session.ShownProblem{Grade: grade, Dominant: dominant, Completion: &done}
+}
+
+func TestBuildSessionPanel_SkippedIsInert(t *testing.T) {
+	// A skipped crimp problem must not enter the tally and must not count
+	// toward the crimp streak or the grade move.
+	shown := []session.ShownProblem{
+		climbedProblem("6B", "crimp"),
+		climbedProblem("6B", "crimp"),
+		skippedProblem("7A", "crimp"),
+		climbedProblem("6B", "crimp"),
+		currentProblem("6B", "sloper"),
+	}
+	p := buildSessionPanel(panelLadder, shown)
+	if p == nil {
+		t.Fatal("got nil panel")
+	}
+	if p.Climbed != 3 {
+		t.Fatalf("Climbed = %d, want 3 (skip excluded)", p.Climbed)
+	}
+	for _, b := range p.Bars {
+		if b.Type == "crimp" && b.Count != 3 {
+			t.Fatalf("crimp count = %d, want 3 (skip not tallied)", b.Count)
+		}
+	}
+	// Three climbed crimps in a row, moved off -> "Off crimp"; the skipped 7A
+	// crimp neither breaks nor extends that.
+	if p.HoldTag != "Off crimp" {
+		t.Fatalf("HoldTag = %q, want %q", p.HoldTag, "Off crimp")
+	}
+	// Grade move is measured against the last climbed (6B), not the skipped 7A.
+	if p.GradeTag != "Holding" {
+		t.Fatalf("GradeTag = %q, want Holding", p.GradeTag)
+	}
+}
+
 func TestBuildSessionPanel_NilBeforeFirstClimb(t *testing.T) {
 	if got := buildSessionPanel(panelLadder, nil); got != nil {
 		t.Fatalf("nil shown: got %+v, want nil", got)

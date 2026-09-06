@@ -123,7 +123,16 @@ templ resultForm(sessionID string, seq int) {
 			<div class="result__status-row">
 				<label class="result__opt result__opt--sent"><input type="radio" name="completion" value="sent" required/> Sent</label>
 				<label class="result__opt result__opt--failed"><input type="radio" name="completion" value="failed" required/> Failed</label>
-				<label class="result__opt result__opt--bailed"><input type="radio" name="completion" value="bailed" required/> Bailed</label>
+				<button
+					type="submit"
+					class="result__opt result__opt--skip"
+					hx-post={ "/session/" + sessionID + "/skip" }
+					hx-target="#session-card"
+					hx-swap="outerHTML"
+					formnovalidate
+				>
+					Skip
+				</button>
 			</div>
 		</fieldset>
 		<div class="result__rpe" role="group" aria-label="Rate the effort, 1 to 10">

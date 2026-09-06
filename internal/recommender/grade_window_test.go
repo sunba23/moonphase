@@ -8,7 +8,6 @@ func TestClassify(t *testing.T) {
 		r    Result
 		want band
 	}{
-		{"low rpe bailed -> backOff", Result{RPE: 3, Completion: CompletionBailed}, bandBackOff},
 		{"high rpe sent -> backOff", Result{RPE: 8, Completion: CompletionSent}, bandBackOff},
 		{"mid rpe sent -> hold", Result{RPE: 6, Completion: CompletionSent}, bandHold},
 		{"low rpe sent -> stepUp", Result{RPE: 4, Completion: CompletionSent}, bandStepUp},
