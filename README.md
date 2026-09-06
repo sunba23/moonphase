@@ -2,6 +2,8 @@
 
 Adaptive MoonBoard training coach. During a session the app picks the next problem from per-problem RPE and completion feedback.
 
+**User guide:** https://sunba23.github.io/moonphase/ (source in `docs/`, served by GitHub Pages from `main` / `/docs`).
+
 ## CI
 
 Every pull request and every push to `main` or a `release/*` branch runs `.github/workflows/ci.yml`. The `ci` job builds, checks that the committed `*_templ.go` files are not stale, runs `go vet`, `golangci-lint run`, a `gofmt`/`goimports` diff check, `govulncheck`, and `go test ./...`. The test suite starts its own Postgres with testcontainers, so the runner needs Docker but no secrets. A second job, `bench`, runs the recommender benchmarks and never blocks a merge.
