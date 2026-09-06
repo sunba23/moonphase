@@ -6,6 +6,7 @@ package layout
 templ head(title string) {
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<meta name="htmx-config" content={ htmxConfig }/>
 	<meta name="theme-color" content="#E9DCC3" media="(prefers-color-scheme: light)"/>
 	<meta name="theme-color" content="#141A2A" media="(prefers-color-scheme: dark)"/>
 	<title>{ title } · MoonPhase</title>
