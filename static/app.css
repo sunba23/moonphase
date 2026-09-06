@@ -70,6 +70,12 @@
 
 	--shadow-1: 0 -2px 16px rgba(20, 26, 42, 0.14);
 
+	/* Live session: vertical space taken by header + heading + the resting
+	   controls strip. The board photo is clamped to the rest so the whole board
+	   fits one viewport with no scroll. The RPE grid opening is a transient
+	   state the .session__scroll safety net covers. Tune on device. */
+	--session-chrome: 17rem;
+
 	/* type — ~1.2 ratio */
 	--step--1: 0.833rem;
 	--step-0: 1rem;
@@ -374,6 +380,23 @@ label:has(input:focus-visible) {
 	margin-left: auto;
 }
 
+/* During a live session the header carries End-session on the right; the
+   training-context chips drop to their own row so the button always has room. */
+.appbar__end {
+	margin: 0 0 0 auto;
+}
+
+.appbar__end-btn {
+	min-height: 44px;
+	padding-inline: var(--space-4);
+	font-size: var(--step--1);
+}
+
+.appbar:has(.appbar__end) .appbar__context {
+	flex-basis: 100%;
+	margin-left: 0;
+}
+
 /* --------------------------------------------------------------------------
    Layer 4 — screen rules (transitional; replaced per phase)
    -------------------------------------------------------------------------- */
@@ -478,11 +501,46 @@ body:has(#session-card) {
 	flex: 1 1 auto;
 	min-height: 0;
 	overflow-y: auto;
-	padding: var(--space-4) var(--space-4) var(--space-5);
+	padding: var(--space-3) var(--space-4) var(--space-4);
 }
 
-.session__scroll h1 {
+/* One-line problem heading: name (truncates) + grade, and the balance glyph. */
+.session__heading {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
 	margin-bottom: var(--space-3);
+}
+
+.session__name {
+	flex: 1 1 auto;
+	min-width: 0;
+	margin: 0;
+	font: 600 var(--step-2) / 1.15 var(--font-display);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.session__grade {
+	flex: 0 0 auto;
+}
+
+.session__info {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	margin: 0 calc(var(--space-2) * -1) 0 0;
+	color: var(--ink-soft);
+	cursor: pointer;
+}
+
+.session__info-icon {
+	width: 1.3rem;
+	height: 1.3rem;
 }
 
 .session__actions {
@@ -521,6 +579,23 @@ body:has(#session-card) {
 	border-radius: var(--r-md);
 }
 
+/* In a live session the board sits fully above the controls strip — no overlap,
+   no page scroll. Clamp the photo height to the room left by the chrome and let
+   .board shrink-wrap it, so the percentage hold positions still resolve against
+   the exact image rectangle. */
+.session--live .board {
+	width: fit-content;
+	max-width: 100%;
+	margin-bottom: 0;
+}
+
+.session--live .board__img {
+	width: auto;
+	max-width: 100%;
+	height: auto;
+	max-height: calc(100dvh - var(--session-chrome));
+}
+
 .hold {
 	position: absolute;
 	width: 7%;
@@ -528,6 +603,59 @@ body:has(#session-card) {
 	border: 3px solid;
 	border-radius: var(--r-full);
 	transform: translate(-50%, -50%);
+}
+
+/* Holds are tappable — the marker is a real button that reveals a one-line tip
+   (grid ref · role · hold type) on tap / hover / focus. */
+button.hold {
+	appearance: none;
+	-webkit-appearance: none;
+	padding: 0;
+	background: transparent;
+	font: inherit;
+	color: inherit;
+	overflow: visible;
+	cursor: pointer;
+}
+
+.hold:hover,
+.hold:focus,
+.hold:focus-visible {
+	z-index: 5;
+}
+
+.hold:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
+}
+
+.hold__tip {
+	position: absolute;
+	bottom: calc(100% + 4px);
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 2px 6px;
+	font: 500 var(--step--1) / 1.3 var(--font-body);
+	white-space: nowrap;
+	color: var(--accent-ink);
+	background: var(--ink);
+	border-radius: var(--r-sm);
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition: opacity 120ms ease;
+}
+
+.hold:hover .hold__tip,
+.hold:focus .hold__tip {
+	opacity: 1;
+	visibility: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hold__tip {
+		transition: none;
+	}
 }
 
 .hold--start {
@@ -815,8 +943,110 @@ button.result__opt {
 	color: var(--ink-soft);
 }
 
-.session__end {
-	margin-top: var(--space-3);
+/* Zero-JS bottom sheet — an sr-only checkbox toggles a fixed panel + scrim.
+   The checkbox stays in the tab order (not display:none) so it is keyboard
+   operable; the visible trigger shows the focus ring via the sibling rule
+   below. No focus trap, no Esc — matching the project's <details> panels. */
+.sheet {
+	position: relative;
+}
+
+.sheet__toggle {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+}
+
+.sheet__scrim {
+	position: fixed;
+	inset: 0;
+	margin: 0;
+	background: rgba(20, 26, 42, 0.45);
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity 160ms ease;
+	z-index: 20;
+}
+
+.sheet__panel {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 21;
+	width: 100%;
+	max-width: 30rem;
+	margin-inline: auto;
+	max-height: 85dvh;
+	overflow-y: auto;
+	padding: var(--space-5) var(--space-4) calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+	background: var(--surface);
+	border: 1px solid var(--edge);
+	border-bottom: 0;
+	border-radius: var(--r-md) var(--r-md) 0 0;
+	box-shadow: var(--shadow-1);
+	transform: translateY(100%);
+	transition: transform 220ms ease-out;
+}
+
+.sheet__toggle:checked ~ .sheet__scrim {
+	opacity: 1;
+	visibility: visible;
+}
+
+.sheet__toggle:checked ~ .sheet__panel {
+	transform: translateY(0);
+}
+
+.sheet__toggle:focus-visible ~ .session__info {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+	border-radius: var(--r-sm);
+}
+
+.sheet__title {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	margin: 0 0 var(--space-3);
+	font: 600 var(--step-1) / 1.2 var(--font-display);
+}
+
+.sheet__title .panel__icon {
+	width: 1.2rem;
+	height: 1.2rem;
+}
+
+.sheet__close {
+	position: absolute;
+	top: var(--space-1);
+	right: var(--space-2);
+	width: 44px;
+	height: 44px;
+	margin: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--step-2);
+	line-height: 1;
+	color: var(--ink-soft);
+	cursor: pointer;
+}
+
+.sheet__panel .panel {
+	margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sheet__scrim,
+	.sheet__panel {
+		transition: none;
+	}
 }
 
 /* Full-screen notice (unsupported board). */
