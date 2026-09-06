@@ -35,6 +35,11 @@ type Pick struct {
 // an ops/data problem, surfaced as a 500 by the handler.
 var ErrNoCandidates = errors.New("recommender: no candidates")
 
+// ErrNoAnchor means every shown problem is skipped, so there is no rated
+// problem to anchor a grade window on. The caller must use FirstPickExcluding
+// instead of PickNext.
+var ErrNoAnchor = errors.New("recommender: no non-skipped shown problem")
+
 // minQualityRepeats is the community-repeat count that lets a non-benchmark
 // problem into the quality-filtered pool.
 const minQualityRepeats = 5
@@ -79,10 +84,16 @@ func New(pool *pgxpool.Pool) *Recommender {
 // ShownState is one already-shown problem, as PickNext needs it: id, grade,
 // and dominant hold type. The caller builds this from session.ShownProblem so
 // the recommender never imports internal/session.
+//
+// Skipped marks a problem the climber chose not to attempt. A skipped entry is
+// inert for the pick — it does not anchor the grade window and does not count
+// toward hold-type balance — but its ProblemID still goes on the exclude list
+// so it is not recommended again this session.
 type ShownState struct {
 	ProblemID int64
 	Grade     string
 	Dominant  string
+	Skipped   bool
 }
 
 // PickNextInput is everything PickNext weighs. Shown is seq-ordered; the last
@@ -158,7 +169,20 @@ func (r *Recommender) PickNext(ctx context.Context, in PickNextInput) (Pick, Pic
 		return Pick{}, diag, ErrNoCandidates
 	}
 
-	last := in.Shown[len(in.Shown)-1]
+	// active is the shown history with skipped problems removed. Everything that
+	// steers the pick — the grade anchor, the hold-type tallies, the recent
+	// window, the streak check — is computed from active, so a skip is inert.
+	active := make([]ShownState, 0, len(in.Shown))
+	for _, s := range in.Shown {
+		if !s.Skipped {
+			active = append(active, s)
+		}
+	}
+	if len(active) == 0 {
+		return Pick{}, diag, ErrNoAnchor
+	}
+	last := active[len(active)-1]
+
 	b := classify(in.CurrentResult)
 	lo, hi, _ := gradeWindow(ladder, last.Grade, b)
 	hi = minGradeOnLadder(ladder, hi, in.SessionMaxGrade)
@@ -168,15 +192,18 @@ func (r *Recommender) PickNext(ctx context.Context, in PickNextInput) (Pick, Pic
 	}
 	diag.GradeLo, diag.GradeHi = lo, hi
 
+	// shownIDs excludes every problem already shown, skipped ones included.
 	shownIDs := make([]int64, 0, len(in.Shown))
-	sessionCounts := make(map[string]int, 5)
 	for _, s := range in.Shown {
 		shownIDs = append(shownIDs, s.ProblemID)
+	}
+	sessionCounts := make(map[string]int, 5)
+	for _, s := range active {
 		if s.Dominant != "" {
 			sessionCounts[s.Dominant]++
 		}
 	}
-	recent := lastDominants(in.Shown, 3)
+	recent := lastDominants(active, 3)
 
 	prefIdx := preferredIndex(ladder, last.Grade, b)
 	if hiIdx := indexOf(ladder, hi); hiIdx >= 0 && prefIdx > hiIdx {
@@ -309,14 +336,30 @@ func (r *Recommender) tieredPick(
 // FirstPick returns a problem at the minimum grade available on
 // (holdsetup, angle), quality-filtered where possible.
 func (r *Recommender) FirstPick(ctx context.Context, holdsetup, angle int16) (Pick, error) {
+	return r.FirstPickExcluding(ctx, holdsetup, angle, nil)
+}
+
+// FirstPickExcluding is FirstPick with an exclude list. It backs the "skip
+// before anything is rated" path: there is no rated result to anchor a window,
+// so the next pick is another minimum-grade problem (FR-011) — minus every
+// problem already shown this session.
+func (r *Recommender) FirstPickExcluding(ctx context.Context, holdsetup, angle int16, excludeIDs []int64) (Pick, error) {
 	cands, err := catalog.MinGradeCandidates(ctx, r.pool, holdsetup, angle)
 	if err != nil {
 		return Pick{}, fmt.Errorf("recommender: first pick: %w", err)
 	}
 
-	mapped := make([]Candidate, len(cands))
-	for i, c := range cands {
-		mapped[i] = Candidate(c)
+	excluded := make(map[int64]struct{}, len(excludeIDs))
+	for _, id := range excludeIDs {
+		excluded[id] = struct{}{}
+	}
+
+	mapped := make([]Candidate, 0, len(cands))
+	for _, c := range cands {
+		if _, skip := excluded[c.ProblemID]; skip {
+			continue
+		}
+		mapped = append(mapped, Candidate(c))
 	}
 
 	return pickFrom(mapped, r.rng.IntN)

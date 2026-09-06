@@ -97,6 +97,66 @@ func TestPickNextRampEscapesDenseFloor(t *testing.T) {
 	}
 }
 
+// TestPickNextIgnoresSkipped pins that a skipped shown problem is inert: it does
+// not anchor the grade window, it does not suppress its own hold type, and it is
+// still excluded from the result.
+func TestPickNextIgnoresSkipped(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+
+	pAnchor, _ := seedPick(ctx, t, pool, 1, "6B", "crimp")
+	pSkip, _ := seedPick(ctx, t, pool, 2, "6B+", "sloper")
+	seedPick(ctx, t, pool, 3, "7A", "sloper")
+	seedPickBulk(ctx, t, pool, 100, 20, "6B+", "sloper")
+
+	rec := New(pool)
+	in := PickNextInput{
+		Holdsetup: 1, Angle: 40, SessionMaxGrade: "7A",
+		Shown: []ShownState{
+			{ProblemID: pAnchor, Grade: "6B", Dominant: "crimp"},
+			{ProblemID: pSkip, Grade: "6B+", Dominant: "sloper", Skipped: true},
+		},
+		CurrentResult: Result{RPE: 3, Completion: CompletionSent},
+	}
+
+	for i := 0; i < 8; i++ {
+		pick, _, err := rec.PickNext(ctx, in)
+		if err != nil {
+			t.Fatalf("iter %d: PickNext: %v", i, err)
+		}
+		// Anchored at the rated 6B (stepUp -> 6B+), never at the skipped 6B+/7A.
+		if pick.Grade != "6B+" {
+			t.Fatalf("iter %d: grade %q, want 6B+ (skipped entry must not move the anchor)", i, pick.Grade)
+		}
+		// The skipped problem is not handed back.
+		if pick.ProblemID == pSkip {
+			t.Fatalf("iter %d: returned the skipped problem", i)
+		}
+	}
+}
+
+func TestFirstPickExcluding(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.New(t)
+
+	ext := 0
+	next := func() int { ext++; return ext }
+	a, _ := seedPick(ctx, t, pool, next(), "6B", "crimp")
+	b, _ := seedPick(ctx, t, pool, next(), "6B", "sloper")
+	c, _ := seedPick(ctx, t, pool, next(), "6B", "jug")
+
+	rec := New(pool)
+	for i := 0; i < 20; i++ {
+		pick, err := rec.FirstPickExcluding(ctx, 1, 40, []int64{a, b})
+		if err != nil {
+			t.Fatalf("iter %d: FirstPickExcluding: %v", i, err)
+		}
+		if pick.ProblemID != c {
+			t.Fatalf("iter %d: picked %d, want the only non-excluded problem %d", i, pick.ProblemID, c)
+		}
+	}
+}
+
 func TestPickNext(t *testing.T) {
 	ctx := context.Background()
 	pool := testdb.New(t)
