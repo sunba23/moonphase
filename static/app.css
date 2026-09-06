@@ -903,3 +903,43 @@ button.result__opt {
 	margin-bottom: var(--space-2);
 	font-weight: 600;
 }
+
+/* --- Site footer (running commit) --------------------------------------- */
+
+/* Sits at the bottom of the flex-column body: #main takes flex:1, so on a
+   short page the footer is pushed to the viewport bottom, and on a long one it
+   trails the content. */
+.sitefooter {
+	flex: 0 0 auto;
+	width: 100%;
+	max-width: 30rem;
+	margin: var(--space-6) auto 0;
+	padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom));
+	border-top: 1px solid var(--edge);
+	text-align: center;
+	font-size: var(--step--1);
+	color: var(--ink-soft);
+}
+
+.sitefooter__link,
+.sitefooter__sha {
+	font-family: var(--font-mono);
+	color: var(--ink-soft);
+}
+
+.sitefooter__link {
+	display: inline-block;
+	padding: var(--space-2) var(--space-3);
+	text-decoration-color: var(--edge);
+}
+
+.sitefooter__link:hover,
+.sitefooter__link:focus-visible {
+	color: var(--ink);
+}
+
+/* The live session pins the viewport (body:has(#session-card){overflow:hidden}),
+   so the footer would be unreachable clutter there — hide it on purpose. */
+body:has(#session-card) .sitefooter {
+	display: none;
+}
