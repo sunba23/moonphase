@@ -84,20 +84,21 @@ test('a new account can sign up, onboard, and get a first problem recommended', 
   await startSession.click();
   await page.waitForURL(/\/session\/[0-9a-f-]{36}$/);
 
-  // The first recommended problem is on screen: its name (heading), its catalog
-  // detail line reflecting the board + angle chosen at onboarding, and its
-  // per-hold breakdown.
+  // The first recommended problem is on screen: its name (heading) and grade in
+  // the card, the board + angle in the shared header, and its holds on the board.
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).not.toBeEmpty();
-  // The catalog-detail line reflects the board + angle chosen at onboarding,
-  // now rendered as discrete chips rather than a middle-dot string. Scope to
-  // <main> so the board/angle chips in the shared header don't collide.
+  // Grade stays in the card, on the heading line. Board + angle are shown once,
+  // in the shared header (the card no longer repeats them).
   const card = page.getByRole('main');
   await expect(card.getByTestId('card-grade')).toBeVisible();
-  await expect(card.getByText('40°', { exact: true })).toBeVisible();
-  await expect(card.getByText('2016', { exact: true })).toBeVisible();
-  // The per-hold breakdown lives in a collapsed "Holds" panel — open it and
-  // confirm the first hold row renders (proves the catalog hold read worked).
-  await card.getByText('Holds', { exact: true }).click();
-  await expect(page.getByRole('listitem').first()).toBeVisible();
+  const header = page.locator('.appbar');
+  await expect(header.getByText('40°', { exact: true })).toBeVisible();
+  await expect(header.getByText('2016', { exact: true })).toBeVisible();
+  // Holds render on the board as tappable markers — tapping one reveals its tip
+  // (proves the catalog hold read worked).
+  const firstHold = card.locator('button.hold').first();
+  await expect(firstHold).toBeVisible();
+  await firstHold.click();
+  await expect(firstHold.locator('.hold__tip')).toBeVisible();
 });

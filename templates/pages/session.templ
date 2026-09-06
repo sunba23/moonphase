@@ -34,13 +34,26 @@ func holdLabel(h catalog.HoldPlacement) string {
 	return label
 }
 
+// holdTip is the one-line label revealed when a hold is tapped or focused, e.g.
+// "A5 · foot" or "G3 · start · crimp". Modifiers are left to the history list.
+func holdTip(h catalog.HoldPlacement) string {
+	s := h.GridRef + " · " + h.Role
+	if h.PrimaryType != "" {
+		s += " · " + h.PrimaryType
+	}
+	return s
+}
+
 templ holdMarker(year string, h catalog.HoldPlacement) {
 	{{ x, y := catalog.HoldXY(year, h.Col, h.Row) }}
-	<span
+	<button
+		type="button"
 		class={ "hold", "hold--" + h.Role }
 		style={ templ.SafeCSS(fmt.Sprintf("left:%.2f%%;top:%.2f%%", x, y)) }
-		title={ h.GridRef }
-	></span>
+		aria-label={ holdTip(h) }
+	>
+		<span class="hold__tip" aria-hidden="true">{ holdTip(h) }</span>
+	</button>
 }
 
 templ moonBoardOverlay(year string, holds []catalog.HoldPlacement) {
@@ -75,38 +88,24 @@ templ holdsList(holds []catalog.HoldPlacement) {
 	</ul>
 }
 
-// holdsPanel wraps the per-hold breakdown in an openable panel, sitting above
-// the Session-balance panel. Closed by default — the board is the primary
-// view; the text breakdown is there when the climber wants it.
-templ holdsPanel(holds []catalog.HoldPlacement) {
-	<details class="panel">
-		<summary class="panel__summary">
-			<span class="panel__summary-label">
-				@iconHolds()
-				Holds
-			</span>
-		</summary>
-		@holdsList(holds)
-	</details>
-}
-
-// iconHolds / iconBalance are the small leading glyphs on the two panel
-// summaries. Decorative only (aria-hidden); the summary text is the label.
-templ iconHolds() {
-	<svg class="panel__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-		<circle cx="5" cy="7" r="1.3" fill="currentColor" stroke="none"></circle>
-		<circle cx="5" cy="12" r="1.3" fill="currentColor" stroke="none"></circle>
-		<circle cx="5" cy="17" r="1.3" fill="currentColor" stroke="none"></circle>
-		<path d="M10 7h9M10 12h9M10 17h9" stroke-linecap="round"></path>
-	</svg>
-}
-
+// iconBalance is the small leading glyph on the Session-balance sheet title.
+// Decorative only (aria-hidden); the adjacent text is the label.
 templ iconBalance() {
 	<svg class="panel__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
 		<path d="M4 20h16" stroke-linecap="round"></path>
 		<rect x="5.5" y="12" width="3.6" height="6" rx="0.6"></rect>
 		<rect x="10.2" y="7" width="3.6" height="11" rx="0.6"></rect>
 		<rect x="14.9" y="14.5" width="3.6" height="3.5" rx="0.6"></rect>
+	</svg>
+}
+
+// iconInfo is the heading-line glyph that opens the Session-balance sheet.
+// Decorative only (aria-hidden); the label lives on the trigger.
+templ iconInfo() {
+	<svg class="session__info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+		<circle cx="12" cy="12" r="9"></circle>
+		<path d="M12 11v5" stroke-linecap="round"></path>
+		<circle cx="12" cy="8" r="0.8" fill="currentColor" stroke="none"></circle>
 	</svg>
 }
 
@@ -168,17 +167,15 @@ templ rpeFace(n int) {
 	</svg>
 }
 
-// sessionPanel is the collapsed "Session balance" surface below the board: the
-// session-so-far hold-type tally plus a terse, non-prose rationale for the
-// current pick. Closed by default so the board stays the primary view.
-templ sessionPanel(p SessionPanel) {
-	<details class="panel">
-		<summary class="panel__summary">
-			<span class="panel__summary-label">
-				@iconBalance()
-				Session balance
-			</span>
-		</summary>
+// balanceBody is the "Session balance" content shown inside the heading-line
+// sheet: the session-so-far hold-type tally plus a terse, non-prose rationale
+// for the current pick.
+templ balanceBody(p SessionPanel) {
+	<h2 class="sheet__title">
+		@iconBalance()
+		Session balance
+	</h2>
+	<div class="panel">
 		if p.GradeTag != "" {
 			<p class="panel__why">
 				<span class="chip">{ p.GradeTag }</span>
@@ -201,25 +198,41 @@ templ sessionPanel(p SessionPanel) {
 				</li>
 			}
 		</ul>
-	</details>
+	</div>
+}
+
+// sessionHeading is the one-line problem heading: name (truncates with an
+// ellipsis) and grade on the same row. When a Session-balance panel is
+// available it also carries the info glyph that opens the balance sheet — a
+// zero-JS checkbox toggle whose state resets on every card swap.
+templ sessionHeading(m SessionCardModel) {
+	<div class="session__heading sheet">
+		if m.Panel != nil {
+			<input type="checkbox" id="balance-sheet" class="sheet__toggle"/>
+		}
+		<h1 class="session__name">{ m.Problem.Name }</h1>
+		<span class="session__grade chip chip--mono" data-testid="card-grade">{ m.Problem.Grade }</span>
+		if m.Panel != nil {
+			<label for="balance-sheet" class="session__info" aria-label="Session balance">
+				@iconInfo()
+			</label>
+			<label for="balance-sheet" class="sheet__scrim" aria-hidden="true"></label>
+			<div class="sheet__panel" role="dialog" aria-label="Session balance">
+				<label for="balance-sheet" class="sheet__close" aria-label="Close">&times;</label>
+				@balanceBody(*m.Panel)
+			</div>
+		}
+	</div>
 }
 
 templ SessionCard(m SessionCardModel) {
 	<div id="session-card" class="session session--live">
 		<div class="session__scroll">
-			<h1>{ m.Problem.Name }</h1>
-			@problemMeta(m.Problem)
+			@sessionHeading(m)
 			@moonBoardOverlay(m.Problem.BoardYear, m.Problem.Holds)
-			@holdsPanel(m.Problem.Holds)
-			if m.Panel != nil {
-				@sessionPanel(*m.Panel)
-			}
 		</div>
 		<div class="session__actions">
 			@resultForm(m.SessionID, m.Seq)
-			<form class="session__end" hx-post={ "/session/" + m.SessionID + "/end" } hx-swap="none">
-				<button type="submit" class="btn btn--secondary btn--full">End session</button>
-			</form>
 		</div>
 	</div>
 }

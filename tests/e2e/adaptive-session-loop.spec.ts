@@ -196,6 +196,8 @@ for (const board of BOARDS) {
     expect(noReload).toBe(true);
 
     // --- End the session -> back to a hub that can start again ---
+    // End session now lives in the header behind an hx-confirm prompt.
+    page.on('dialog', (d) => d.accept());
     await page.getByRole('button', { name: 'End session' }).click();
     await page.waitForURL((url) => new URL(url).pathname === '/');
     await expect(page.getByRole('button', { name: 'Start session' })).toBeVisible();
