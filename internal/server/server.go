@@ -61,6 +61,7 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 		// onboarding completeness.
 
 		r.Post("/signout", ap.handleSignout)
+		r.Post("/account/delete", ap.handleDeleteAccount)
 		r.Get("/onboarding", op.handlePage)
 		r.Post("/onboarding", op.handleSubmit)
 

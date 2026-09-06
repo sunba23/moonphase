@@ -107,6 +107,29 @@ func (a *authPages) handleSignout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// handleDeleteAccount permanently deletes the caller's account: the Supabase
+// auth user and — via ON DELETE CASCADE — their profile, sessions, and
+// per-problem results. On success it clears the session cookies and points the
+// client at /signin. A GoTrue failure leaves the account intact and returns
+// 500; the session cookies are kept so the user can retry.
+func (a *authPages) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "internal error: no user id in context", http.StatusInternalServerError)
+		return
+	}
+
+	if err := a.authClient.DeleteUser(r.Context(), userID); err != nil {
+		a.logger.Error().Err(err).Msg("account delete failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	auth.ClearSessionCookies(w, a.secure)
+	w.Header().Set("HX-Redirect", "/signin")
+	w.WriteHeader(http.StatusOK)
+}
+
 func renderPage(w http.ResponseWriter, r *http.Request, c templ.Component, status int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)

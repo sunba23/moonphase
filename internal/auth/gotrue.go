@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -50,6 +51,7 @@ func (e *AuthAPIError) Error() string {
 type AuthClient struct {
 	baseURL    string
 	apiKey     string
+	secretKey  string
 	httpClient *http.Client
 }
 
@@ -57,6 +59,7 @@ func NewAuthClient(cfg config.Config) *AuthClient {
 	return &AuthClient{
 		baseURL:    strings.TrimRight(cfg.SupabaseURL, "/") + "/auth/v1",
 		apiKey:     cfg.SupabasePublishableKey,
+		secretKey:  cfg.SupabaseSecretKey,
 		httpClient: &http.Client{Timeout: authRequestTimeout},
 	}
 }
@@ -96,6 +99,37 @@ func (c *AuthClient) SignOut(ctx context.Context, accessToken string) error {
 
 	if resp.StatusCode >= http.StatusMultipleChoices {
 		return fmt.Errorf("auth: logout: %w", decodeAuthError(resp))
+	}
+
+	return nil
+}
+
+// DeleteUser permanently deletes a user through GoTrue's admin API. The
+// profiles and sessions foreign keys are declared ON DELETE CASCADE against
+// auth.users, so this one call also removes the user's profile, sessions, and
+// per-problem results. It needs the service (secret) key — the publishable key
+// is rejected on /admin routes. A 404 is treated as success: the user is
+// already gone, which is the desired end state.
+func (c *AuthClient) DeleteUser(ctx context.Context, userID string) error {
+	endpoint := c.baseURL + "/admin/users/" + url.PathEscape(userID)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, endpoint, nil)
+	if err != nil {
+		return fmt.Errorf("auth: build delete-user request: %w", err)
+	}
+	req.Header.Set("apikey", c.secretKey)
+	req.Header.Set("Authorization", "Bearer "+c.secretKey)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("auth: call delete-user: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil
+	}
+	if resp.StatusCode >= http.StatusMultipleChoices {
+		return fmt.Errorf("auth: delete-user: %w", decodeAuthError(resp))
 	}
 
 	return nil
