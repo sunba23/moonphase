@@ -7,7 +7,6 @@ type Completion string
 const (
 	CompletionSent   Completion = "sent"
 	CompletionFailed Completion = "failed"
-	CompletionBailed Completion = "bailed"
 )
 
 // Result is the previous problem's outcome: an RPE 1–10 plus a completion
@@ -27,9 +26,9 @@ const (
 )
 
 // classify maps a Result to a band. The locked 4-band rule:
-//   - failed / bailed, OR RPE >= 8 (on any status) -> backOff
-//   - RPE 5–7 and sent                             -> hold
-//   - RPE <= 4 and sent                            -> stepUp
+//   - failed, OR RPE >= 8 (on any status) -> backOff
+//   - RPE 5–7 and sent                    -> hold
+//   - RPE <= 4 and sent                   -> stepUp
 func classify(r Result) band {
 	if r.Completion != CompletionSent {
 		return bandBackOff

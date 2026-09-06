@@ -46,7 +46,7 @@
 
 	--sent: #1f6f43;
 	--failed: #a8321f;
-	--bailed: #7a5a12;
+	--skip: #7a5a12;
 
 	/* hold-overlay roles */
 	--hold-start: #1f6f43;
@@ -96,7 +96,7 @@
 
 		--sent: #63c090;
 		--failed: #ef9aa6;
-		--bailed: #e0bd63;
+		--skip: #e0bd63;
 
 		--hold-start: #63c090;
 		--hold-finish: #cf9de0;
@@ -697,7 +697,7 @@ body:has(#session-card) {
 	gap: var(--space-2);
 }
 
-.result__status-row label {
+.result__opt {
 	flex: 1;
 	display: flex;
 	align-items: center;
@@ -706,15 +706,24 @@ body:has(#session-card) {
 	min-height: 44px;
 	margin: 0;
 	padding: var(--space-2);
+	font: inherit;
 	font-size: var(--step--1);
 	font-weight: 500;
+	color: inherit;
 	border: 1px solid transparent;
 	border-radius: var(--r-sm);
 	cursor: pointer;
 }
 
-/* Sent / Failed / Bailed carry a constant green / red / yellow tint; the
-   chosen one deepens, takes a solid coloured border, and goes bold. */
+/* Skip is a plain submit button, not a radio label — reset the UA button look. */
+button.result__opt {
+	appearance: none;
+	-webkit-appearance: none;
+}
+
+/* Sent / Failed carry a constant green / red tint; the chosen one deepens,
+   takes a solid coloured border, and goes bold. Skip carries a muted amber
+   tint and darkens on press. */
 .result__opt--sent {
 	background: color-mix(in srgb, var(--sent) 14%, var(--surface));
 	border-color: color-mix(in srgb, var(--sent) 32%, var(--edge));
@@ -725,9 +734,9 @@ body:has(#session-card) {
 	border-color: color-mix(in srgb, var(--failed) 32%, var(--edge));
 }
 
-.result__opt--bailed {
-	background: color-mix(in srgb, var(--bailed) 14%, var(--surface));
-	border-color: color-mix(in srgb, var(--bailed) 32%, var(--edge));
+.result__opt--skip {
+	background: color-mix(in srgb, var(--skip) 14%, var(--surface));
+	border-color: color-mix(in srgb, var(--skip) 32%, var(--edge));
 }
 
 .result__opt--sent:has(input:checked) {
@@ -742,9 +751,9 @@ body:has(#session-card) {
 	font-weight: 600;
 }
 
-.result__opt--bailed:has(input:checked) {
-	background: color-mix(in srgb, var(--bailed) 28%, var(--surface));
-	border-color: var(--bailed);
+.result__opt--skip:active {
+	background: color-mix(in srgb, var(--skip) 28%, var(--surface));
+	border-color: var(--skip);
 	font-weight: 600;
 }
 
@@ -754,10 +763,6 @@ body:has(#session-card) {
 
 .result__opt--failed input {
 	accent-color: var(--failed);
-}
-
-.result__opt--bailed input {
-	accent-color: var(--bailed);
 }
 
 /* RPE 1–10: a calm, uniform grid. Each button pairs its digit with an effort
@@ -821,11 +826,6 @@ body:has(#session-card) {
 .chip--failed {
 	color: var(--failed);
 	border-color: color-mix(in srgb, var(--failed) 45%, var(--edge));
-}
-
-.chip--bailed {
-	color: var(--bailed);
-	border-color: color-mix(in srgb, var(--bailed) 45%, var(--edge));
 }
 
 /* --- History --------------------------------------------------------- */
