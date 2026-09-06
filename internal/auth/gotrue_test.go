@@ -154,3 +154,62 @@ func TestAuthClient_SignOut(t *testing.T) {
 		}
 	})
 }
+
+func TestAuthClient_DeleteUser(t *testing.T) {
+	newClient := func(srv *httptest.Server) *AuthClient {
+		return NewAuthClient(config.Config{
+			SupabaseURL:            srv.URL,
+			SupabasePublishableKey: "test-anon-key",
+			SupabaseSecretKey:      "test-secret-key",
+		})
+	}
+
+	t.Run("issues a DELETE to the admin route with the secret key", func(t *testing.T) {
+		var gotMethod, gotPath, gotAPIKey, gotAuth string
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			gotMethod, gotPath = r.Method, r.URL.Path
+			gotAPIKey, gotAuth = r.Header.Get("apikey"), r.Header.Get("Authorization")
+			w.WriteHeader(http.StatusOK)
+		}))
+		t.Cleanup(srv.Close)
+
+		if err := newClient(srv).DeleteUser(context.Background(), "user-123"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if gotMethod != http.MethodDelete {
+			t.Fatalf("method = %s, want DELETE", gotMethod)
+		}
+		if gotPath != "/auth/v1/admin/users/user-123" {
+			t.Fatalf("path = %s, want /auth/v1/admin/users/user-123", gotPath)
+		}
+		if gotAPIKey != "test-secret-key" || gotAuth != "Bearer test-secret-key" {
+			t.Fatalf("auth headers = apikey %q / %q, want the secret key", gotAPIKey, gotAuth)
+		}
+	})
+
+	t.Run("a 404 is treated as success", func(t *testing.T) {
+		srv := startFakeGoTrue(t, map[string]gotrueResponse{
+			"/auth/v1/admin/users/gone": {status: http.StatusNotFound, body: `{"code":404,"error_code":"user_not_found","msg":"User not found"}`},
+		})
+
+		if err := newClient(srv).DeleteUser(context.Background(), "gone"); err != nil {
+			t.Fatalf("expected nil for 404, got %v", err)
+		}
+	})
+
+	t.Run("an error status surfaces as *AuthAPIError", func(t *testing.T) {
+		srv := startFakeGoTrue(t, map[string]gotrueResponse{
+			"/auth/v1/admin/users/u1": {status: http.StatusForbidden, body: `{"code":403,"error_code":"not_admin","msg":"not allowed"}`},
+		})
+
+		err := newClient(srv).DeleteUser(context.Background(), "u1")
+
+		var apiErr *AuthAPIError
+		if !errors.As(err, &apiErr) {
+			t.Fatalf("expected *AuthAPIError, got %v", err)
+		}
+		if apiErr.ErrorCode != "not_admin" {
+			t.Fatalf("unexpected error code: %s", apiErr.ErrorCode)
+		}
+	})
+}
