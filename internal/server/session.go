@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/a-h/templ"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
@@ -150,10 +151,23 @@ func (s *sessionPages) handleView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	renderAppPage(w, r, "Session", pages.SessionCard(pages.SessionCardModel{
+	renderSessionPage(w, r, sessionID, pages.SessionCard(pages.SessionCardModel{
 		SessionID: sessionID, Seq: current.Seq, Problem: *view,
 		Panel: buildSessionPanel(ladder, shown),
 	}), http.StatusOK)
+}
+
+// renderSessionPage renders the live session full page: the shared header with
+// an End-session control above the given content. Falls back to a header-less
+// render when no profile is in context (should not happen in the gated tier).
+func renderSessionPage(w http.ResponseWriter, r *http.Request, sessionID string, content templ.Component, status int) {
+	nav, ok := navFromContext(r)
+	if !ok {
+		renderPage(w, r, content, status)
+		return
+	}
+	nav.EndSessionID = sessionID
+	writeAppPage(w, r, "Session", nav, content, status)
 }
 
 // handleResult (POST /session/{sessionID}/result) records the current
