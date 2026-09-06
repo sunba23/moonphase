@@ -28,6 +28,7 @@ func NewRouter(verifier *auth.Verifier, authClient *auth.AuthClient, profileStor
 	secure := cfg.AppEnv != "development"
 
 	r.Use(requestLogger(logger))
+	r.Use(versionContext(cfg.Version))
 
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
