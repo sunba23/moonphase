@@ -84,11 +84,12 @@ func scoreCandidate(c ScoreCandidate, st ScoreState) float64 {
 
 // scoreNext scores every candidate on grade fit + hold-type balance + variety
 // + quality and returns the index of the argmax. Candidates within
-// scoreEpsilon of the max form the tie set, resolved by roll. Empty cands ->
-// (-1, ErrNoCandidates). Pure and deterministic given roll.
-func scoreNext(cands []ScoreCandidate, st ScoreState, roll func(n int) int) (int, error) {
+// scoreEpsilon of the max form the tie set, resolved by roll; tieSize is that
+// set's length (>= 1 on success), reported for decision-log diagnostics. Empty
+// cands -> (-1, 0, ErrNoCandidates). Pure and deterministic given roll.
+func scoreNext(cands []ScoreCandidate, st ScoreState, roll func(n int) int) (idx, tieSize int, err error) {
 	if len(cands) == 0 {
-		return -1, ErrNoCandidates
+		return -1, 0, ErrNoCandidates
 	}
 
 	best := math.Inf(-1)
@@ -105,5 +106,5 @@ func scoreNext(cands []ScoreCandidate, st ScoreState, roll func(n int) int) (int
 		}
 	}
 
-	return tie[roll(len(tie))], nil
+	return tie[roll(len(tie))], len(tie), nil
 }

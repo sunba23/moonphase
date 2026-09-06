@@ -42,6 +42,18 @@ func classify(r Result) band {
 	return bandHold
 }
 
+// String is the stable log label for a band, used in the rec_pick decision log.
+func (b band) String() string {
+	switch b {
+	case bandBackOff:
+		return "back_off"
+	case bandStepUp:
+		return "step_up"
+	default:
+		return "hold"
+	}
+}
+
 // indexOf returns the position of grade on ladder, or -1.
 func indexOf(ladder []string, grade string) int {
 	for i, g := range ladder {
