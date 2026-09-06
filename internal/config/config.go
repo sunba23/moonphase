@@ -11,6 +11,10 @@ type Config struct {
 	AppEnv                 string
 	SupabaseURL            string
 	SupabasePublishableKey string
+	// Version is the full commit SHA the running binary was built from, or
+	// "dev" when RAILWAY_GIT_COMMIT_SHA is not set (local runs). The page
+	// footer renders a short form of it.
+	Version string
 }
 
 func Load() (Config, error) {
@@ -39,11 +43,17 @@ func Load() (Config, error) {
 		return Config{}, errors.New("DATABASE_URL is required")
 	}
 
+	version := os.Getenv("RAILWAY_GIT_COMMIT_SHA")
+	if version == "" {
+		version = "dev"
+	}
+
 	return Config{
 		Port:                   port,
 		DatabaseURL:            databaseURL,
 		AppEnv:                 appEnv,
 		SupabaseURL:            supabaseURL,
 		SupabasePublishableKey: supabasePublishableKey,
+		Version:                version,
 	}, nil
 }

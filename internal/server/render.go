@@ -33,5 +33,8 @@ func renderAppPage(w http.ResponseWriter, r *http.Request, title string, content
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
-	_ = layout.AppPage(title, nav, content).Render(r.Context(), w)
+	// r.Context() IS propagated into the render — the footer template reads the
+	// version off it. contextcheck trips over templ's generated closures once
+	// any component in the shell consumes the context.
+	_ = layout.AppPage(title, nav, content).Render(r.Context(), w) //nolint:contextcheck // false positive: context is propagated, see comment above
 }
