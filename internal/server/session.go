@@ -67,7 +67,7 @@ func (s *sessionPages) handleStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pick, err := s.rec.FirstPick(ctx, prof.Holdsetup, prof.Angle)
+	pick, poolSize, err := s.rec.FirstPick(ctx, prof.Holdsetup, prof.Angle)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("session: first pick failed")
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -96,6 +96,7 @@ func (s *sessionPages) handleStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.logFirstPick(started.ID, 0, pick, poolSize)
 	s.redirectToSession(w, started.ID)
 }
 
@@ -229,10 +230,6 @@ func (s *sessionPages) handleResult(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	if diag.FallbackTier > 0 {
-		s.logger.Warn().Int("tier", diag.FallbackTier).
-			Str("session", sessionID).Msg("session: next pick used a fallback tier")
-	}
 
 	rpe16 := int16(rpe) //nolint:gosec // rpe is validated to 1..10 above
 	if err := s.sessions.AdvanceSession(ctx, sessionID, seq, rpe16, completion, session.SessionProblem{
@@ -247,6 +244,7 @@ func (s *sessionPages) handleResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.logAdaptivePick(sessionID, seq+1, last, rpe, completion, sess.MaxGrade, diag, pick)
 	s.renderNextCard(w, r, sess, sessionID, seq+1, pick.ConfigurationID)
 }
 
@@ -362,17 +360,22 @@ func (s *sessionPages) handleSkip(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var pick recommender.Pick
+	var (
+		pick     recommender.Pick
+		diag     recommender.PickDiag
+		poolSize int
+		anchored bool
+	)
 	if anchor == nil {
 		// Nothing rated yet — another minimum-grade pick (FR-011).
-		pick, err = s.rec.FirstPickExcluding(ctx, sess.Holdsetup, sess.Angle, shownIDs)
+		pick, poolSize, err = s.rec.FirstPickExcluding(ctx, sess.Holdsetup, sess.Angle, shownIDs)
 		if err != nil {
 			s.logger.Error().Err(err).Msg("session: skip first-pick failed")
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 	} else {
-		var diag recommender.PickDiag
+		anchored = true
 		pick, diag, err = s.rec.PickNext(ctx, recommender.PickNextInput{
 			Holdsetup:       sess.Holdsetup,
 			Angle:           sess.Angle,
@@ -384,10 +387,6 @@ func (s *sessionPages) handleSkip(w http.ResponseWriter, r *http.Request) {
 			s.logger.Error().Err(err).Msg("session: skip pick next failed")
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
-		}
-		if diag.FallbackTier > 0 {
-			s.logger.Warn().Int("tier", diag.FallbackTier).
-				Str("session", sessionID).Msg("session: skip pick used a fallback tier")
 		}
 	}
 
@@ -403,6 +402,11 @@ func (s *sessionPages) handleSkip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if anchored {
+		s.logAdaptivePick(sessionID, seq+1, *anchor, int(*anchor.RPE), *anchor.Completion, sess.MaxGrade, diag, pick)
+	} else {
+		s.logFirstPick(sessionID, seq+1, pick, poolSize)
+	}
 	s.renderNextCard(w, r, sess, sessionID, seq+1, pick.ConfigurationID)
 }
 
