@@ -1,9 +1,11 @@
-.claude
-context
 .mcp.json
 **.md
 !README.md
 !CHANGELOG.md
+!CLAUDE.md
+!context/**/*.md
+.claude
+!.claude/settings.json
 **.env
 bin/
 tmp/
