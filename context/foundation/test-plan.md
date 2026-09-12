@@ -201,7 +201,7 @@ How to add new tests in this project.
 - References: `internal/recommender/pick_next_test.go`
   (`TestPickNextRampEscapesDenseFloor`, crimp-streak, never-harder),
   `tests/e2e/adaptive-session-loop.spec.ts` ("a run of easy sends ramps grade
-  past the dense floor", "a failed or bailed attempt never yields a strictly
+  past the dense floor", "a failed or skipped attempt never yields a strictly
   harder next problem").
 
 ### 6.6 Per-rollout-phase notes

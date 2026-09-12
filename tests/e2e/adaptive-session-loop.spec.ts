@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type Response } from '@playwright/test';
 
 /**
  * Protects: test-plan.md §2 Risk #1 (the adaptive loop's direction of
@@ -12,9 +12,11 @@ import { test, expect, type Page } from '@playwright/test';
  * HTMX fragment.
  *
  * The failures this test catches:
- *  - a "failed" or "bailed" attempt produces a STRICTLY HARDER next problem
- *    (breaks US-01 AC "a felt 9/10 or failed/bailed result never produces a
+ *  - a "failed" or "skipped" attempt produces a STRICTLY HARDER next problem
+ *    (breaks US-01 AC "a felt 9/10 or failed/skipped result never produces a
  *    strictly harder next pick" — the one hard invariant of FR-012);
+ *  - a skip moves the grade axis, gets re-recommended, or shows up in session
+ *    history (FR-008 / FR-012: skip is rating-free and inert for the engine);
  *  - the first recommendation is not at the board's minimum grade (FR-011);
  *  - the result POST triggers a full navigation / document reload instead of
  *    an in-place #session-card swap (Risk #6);
@@ -75,6 +77,13 @@ async function readCardGrade(page: Page): Promise<string> {
   return ((await grade.textContent()) ?? '').trim();
 }
 
+// Reads the current problem card's name (the level-1 heading).
+async function readCardName(page: Page): Promise<string> {
+  const heading = page.getByRole('heading', { level: 1 });
+  await expect(heading).not.toBeEmpty();
+  return ((await heading.textContent()) ?? '').trim();
+}
+
 // Waits for htmx to finish swapping AND settling the new #session-card, so its
 // nested forms (the next result form, the End form) are re-bound before the
 // test acts on them. Syncs on htmx's own transient lifecycle classes on the
@@ -106,6 +115,22 @@ async function submitResult(page: Page, completion: string, rpe: number): Promis
 
   await waitForCardSettled(page);
   await expect(page.getByRole('radio', { name: 'Sent' })).not.toBeChecked();
+}
+
+// Clicks the Skip button — a one-click submit that needs no RPE tap. Waits for
+// the matching /skip response and for the fresh #session-card to settle. Returns
+// the response so callers can count skip submissions separately from results.
+async function skipCurrent(page: Page): Promise<Response> {
+  const [response] = await Promise.all([
+    page.waitForResponse(
+      (r) => r.url().endsWith('/skip') && r.request().method() === 'POST',
+    ),
+    page.getByRole('button', { name: 'Skip' }).click(),
+  ]);
+  expect(response.status()).toBe(200);
+
+  await waitForCardSettled(page);
+  return response;
 }
 
 type Board = { holdsetup: string; year: string; minGrade: string };
@@ -155,7 +180,7 @@ async function signUpOnboardStart(page: Page, board: Board): Promise<string> {
 }
 
 for (const board of BOARDS) {
-  test(`board ${board.year}: a failed or bailed attempt never yields a strictly harder next problem, and the card swaps in place`, async ({ page }) => {
+  test(`board ${board.year}: a failed or skipped attempt never yields a strictly harder next problem, and the card swaps in place`, async ({ page }) => {
     const sessionUrl = await signUpOnboardStart(page, board);
 
     // Mark the document so a full reload during the loop is detectable.
@@ -183,10 +208,15 @@ for (const board of BOARDS) {
     expect(page.url()).toBe(sessionUrl);
     expect(gradeIndex(g2)).toBeLessThanOrEqual(gradeIndex(g1));
 
-    // --- Bail: same rule ---
-    await submitResult(page, 'Bailed', 5);
+    // --- Skip: carries no RPE and is inert for the grade axis (FR-012). The
+    //     anchor for the next pick is still the Failed/RPE-9 result above (skip
+    //     rows are skipped over when the server looks for the last rated
+    //     result), so the bound is the SAME one already proven for g2 — against
+    //     g1, not g2. ---
+    const skippedName = await readCardName(page);
+    await skipCurrent(page);
     const g3 = await readCardGrade(page);
-    expect(gradeIndex(g3)).toBeLessThanOrEqual(gradeIndex(g2));
+    expect(gradeIndex(g3)).toBeLessThanOrEqual(gradeIndex(g1));
 
     // The whole loop stayed on one URL and never full-reloaded.
     expect(page.url()).toBe(sessionUrl);
@@ -195,17 +225,26 @@ for (const board of BOARDS) {
     );
     expect(noReload).toBe(true);
 
+    // --- The skipped problem is excluded from the rest of the session ---
+    await submitResult(page, 'Sent', 3);
+    expect(await readCardName(page)).not.toBe(skippedName);
+
     // --- End the session -> back to a hub that can start again ---
     // End session now lives in the header behind an hx-confirm prompt.
     page.on('dialog', (d) => d.accept());
     await page.getByRole('button', { name: 'End session' }).click();
     await page.waitForURL((url) => new URL(url).pathname === '/');
     await expect(page.getByRole('button', { name: 'Start session' })).toBeVisible();
+
+    // --- The skip never appears in session history (FR-008) ---
+    await page.getByRole('link', { name: /past sessions/i }).click();
+    await page.waitForURL((url) => new URL(url).pathname === '/sessions');
+    await expect(page.getByRole('link', { name: /3 problems climbed/i })).toBeVisible();
   });
 }
 
 /**
- * Protects test-plan.md Risk #6 / plan row 5.6: the 3 completion-status radios
+ * Protects test-plan.md Risk #6 / plan row 5.6: the 2 completion-status radios
  * are a re-selectable choice, not a trigger. Only the RPE button submits. If a
  * status radio ever gained an auto-submit, mis-tapping "Failed" at the wall
  * would lock in a wrong rating with no way back.
@@ -221,19 +260,15 @@ test('board 2016: re-selecting a completion status moves the choice without subm
 
   const g0 = await readCardGrade(page);
 
-  // Walk through all three statuses. Each selection reveals the RPE grid and
-  // moves the checked radio; none of them submits.
+  // Walk through both statuses. Each selection reveals the RPE grid and moves
+  // the checked radio; neither of them submits.
   await page.getByRole('radio', { name: 'Failed' }).check();
   await expect(page.getByRole('radio', { name: 'Failed' })).toBeChecked();
   await expect(page.getByRole('button', { name: '5', exact: true })).toBeVisible();
 
-  await page.getByRole('radio', { name: 'Bailed' }).check();
-  await expect(page.getByRole('radio', { name: 'Bailed' })).toBeChecked();
-  await expect(page.getByRole('radio', { name: 'Failed' })).not.toBeChecked();
-
   await page.getByRole('radio', { name: 'Sent' }).check();
   await expect(page.getByRole('radio', { name: 'Sent' })).toBeChecked();
-  await expect(page.getByRole('radio', { name: 'Bailed' })).not.toBeChecked();
+  await expect(page.getByRole('radio', { name: 'Failed' })).not.toBeChecked();
   await expect(page.getByRole('button', { name: '5', exact: true })).toBeVisible();
 
   // Nothing submitted: same card, same URL, zero /result requests so far.
@@ -249,8 +284,33 @@ test('board 2016: re-selecting a completion status moves the choice without subm
   expect(resp.status()).toBe(200);
   await waitForCardSettled(page);
 
-  // Exactly one submit total — the three status re-taps fired nothing.
+  // Exactly one submit total — the two status re-taps fired nothing.
   expect(resultPosts).toBe(1);
+});
+
+/**
+ * Protects test-plan.md Risk #6: unlike the status radios above, Skip is a
+ * one-click submit — it needs no RPE tap and must fire exactly once. If Skip
+ * ever required a second tap to confirm, a climber at the wall skipping a
+ * problem they don't want to attempt would be stuck on a card they can't move
+ * past without rating something they didn't climb.
+ */
+test('board 2016: Skip submits immediately with no RPE tap', async ({ page }) => {
+  const board = BOARDS[0];
+  const sessionUrl = await signUpOnboardStart(page, board);
+
+  let skipPosts = 0;
+  page.on('request', (r) => {
+    if (r.url().endsWith('/skip') && r.method() === 'POST') skipPosts += 1;
+  });
+
+  await skipCurrent(page);
+
+  expect(page.url()).toBe(sessionUrl); // swapped in place, no navigation
+  expect(skipPosts).toBe(1);
+  // A fresh card has no status radio checked — no RPE tap was needed.
+  await expect(page.getByRole('radio', { name: 'Sent' })).not.toBeChecked();
+  await expect(page.getByRole('radio', { name: 'Failed' })).not.toBeChecked();
 });
 
 /**
